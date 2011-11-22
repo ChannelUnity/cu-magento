@@ -1,0 +1,220 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Camiloo_Channelunity>
+            <version>1.0.0</version>
+        </Camiloo_Channelunity>
+    </modules>
+    <frontend>
+	    <secure_url>
+            <channelunity_cronrun>/channelunity/cron/cronrun/</channelunity_cronrun>
+        </secure_url>
+        <routers>
+            <channelunity>
+                <use>standard</use>
+                <args>
+                    <module>Camiloo_Channelunity</module>
+                    <frontName>channelunity</frontName>
+                </args>
+            </channelunity>
+        </routers>
+        <layout>
+            <updates>
+                <channelunity>
+                    <file>channelunity.xml</file>
+                </channelunity>
+            </updates>
+        </layout>
+    </frontend>
+    <admin>
+        <routers>
+			<channelunity>
+				<use>admin</use>
+				<args>
+					<module>Camiloo_Channelunity</module>
+					<frontName>channelunity</frontName>
+				</args>
+			</channelunity>
+        </routers>
+    </admin>
+    <adminhtml>	
+        <menu>
+            
+        </menu>
+		<acl>
+			<resources>
+				<admin>
+					<children>
+ 					    
+                    </children>
+				</admin>
+			</resources>
+			<resources>
+				<all>
+					<title>Allow Everything</title>
+				</all>
+        	    <admin>
+                    <children>
+                        <system>
+                            <children>
+                                <config>
+                                    <children>
+                                        <channelunityint>
+                                            <title>ChannelUnity</title>
+                                        </channelunityint>
+                                    </children>
+                                </config>
+                            </children>
+                        </system>
+                    </children>
+                </admin>
+			</resources>
+		</acl>
+		<layout>
+			<updates>
+				<channelunity>
+					<file>channelunity.xml</file>
+				</channelunity>
+			</updates>
+		</layout>
+    </adminhtml>   
+    <global>
+        <models>
+            <channelunity>
+                <class>Camiloo_Channelunity_Model</class>
+            </channelunity> 
+        </models>
+        <resources>
+            <channelunity_setup>
+              <!--  <setup>
+                    <module>Camiloo_Channelunity</module>
+                    <class>Camiloo_Channelunity_Model_Entity_Setup</class>
+                </setup> -->
+                <connection>
+                    <use>core_setup</use>
+                </connection>
+            </channelunity_setup>
+            <channelunity_write>
+                <connection>
+                    <use>core_write</use>
+                </connection>
+            </channelunity_write>
+            <channelunity_read>
+                <connection>
+                    <use>core_read</use>
+                </connection>
+            </channelunity_read>
+			
+        </resources>
+        <blocks>
+            <channelunity>
+                <class>Camiloo_Channelunity_Block</class>
+            </channelunity>
+        </blocks>
+        <helpers>
+            <channelunity>
+                <class>Camiloo_Channelunity_Helper</class>
+            </channelunity>
+        </helpers>
+        <events>
+            <catalog_product_save_after>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>productWasSaved</method>
+                    </channelunity>
+                </observers>			
+			</catalog_product_save_after>
+			<controller_action_postdispatch>
+               <observers>
+                    <controller_action_after>
+                        <class>channelunity/observer</class>
+                         <method>hookToControllerActionPostDispatch</method>
+                      </controller_action_after>
+                  </observers>
+               </controller_action_postdispatch>
+            <sales_order_place_after>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>orderWasPlaced</method>
+                    </channelunity>
+                </observers>			
+			</sales_order_place_after>
+          	<sales_order_invoice_pay>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>onInvoicePaid</method>
+                    </channelunity>
+                </observers>			
+			</sales_order_invoice_pay>
+			<sales_order_save_after>
+				<observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>checkForCancellation</method>
+                    </channelunity>
+				</observers>				
+			</sales_order_save_after>
+            <sales_order_shipment_track_save_after>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>saveTrackingToAmazon</method>
+                    </channelunity>
+                </observers>
+            </sales_order_shipment_track_save_after>
+            <sales_order_shipment_save_after>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>shipAmazon</method>
+                    </channelunity>
+                </observers>
+            </sales_order_shipment_save_after>
+        </events>
+    </global>	
+    <default>
+     <!--   <payment>
+            <amzpaymentmethodde>
+                <active>1</active>
+                <model>channelunity/paymentmethodde</model>
+                <order_status>pending</order_status>
+                <title>Paid at Amazon.de</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </amzpaymentmethodde>
+            <amzpaymentmethoduk>
+                <active>1</active>
+                <model>channelunity/paymentmethoduk</model>
+                <order_status>pending</order_status>
+                <title>Paid at Amazon.co.uk</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </amzpaymentmethoduk>
+            <amzpaymentmethodcom>
+                <active>1</active>
+                <model>channelunity/paymentmethodcom</model>
+                <order_status>pending</order_status>
+                <title>Paid at Amazon.com</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </amzpaymentmethodcom>
+            <amzpaymentmethodfr>
+                <active>1</active>
+                <model>channelunity/paymentmethodfr</model>
+                <order_status>pending</order_status>
+                <title>Paid at Amazon.fr</title>
+                <allowspecific>0</allowspecific>
+                <group>offline</group>
+            </amzpaymentmethodfr>
+		</payment> -->
+	</default>
+</config>

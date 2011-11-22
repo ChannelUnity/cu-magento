@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<config>
+    <modules>
+        <Camiloo_Channelunity>
+            <active>true</active>
+            <codePool>community</codePool>
+        </Camiloo_Channelunity>
+    </modules>
+</config> 
