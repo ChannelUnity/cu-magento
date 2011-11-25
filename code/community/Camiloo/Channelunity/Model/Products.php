@@ -5,7 +5,7 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 	protected $_collection = 'catalog/product';
     private $starttime;
 	private $endtime;
-	private $runtime;
+	private $runtime = 0;
 	private $beforeMemory;
 	private $maxMemory;
 	private $maxMemoryChar;
@@ -162,15 +162,21 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
     
 	
     public function generateCuXmlForProduct($args) {
-		$this->countCurr++;            
+		$productXml = '';
+		$this->countCurr++;
+		
+		$this->maxMemory = $this->return_bytes(ini_get('memory_limit'));
+		
 		if ($this->runtime < $this->maxruntime 
 			&& (memory_get_peak_usage() + $this->changeMemory) < $this->maxMemory
 			&& $this->countCurr <= $this->upperLimit) 
 		{
-			
 			$product = Mage::getModel('catalog/product');
-			$id = $args['row']['entity_id'];
+			$id = $args->getEntityId();
+
 			$product->load($id);
+			
+			
 			$this->rangeNext = $product->getId() + 1;
 			// existing function code here....
 			
@@ -312,7 +318,7 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 										if ('Mage_Catalog_Model_Resource_Eav_Mysql4_Product_Type_Configurable_Attribute_Collection' == get_class($prodDataValue)) {
 											$productXml .= "    <$attr><![CDATA[Mage_Core_Model_Mysql4_Collection_Abstract]]></$attr>\n";
 										}
-										else {
+										elseif(!is_object($prodDataValue)){
 											$productXml .= "    <$attr><![CDATA[".$prodDataValue."]]></$attr>\n";
 										}
 									}
@@ -331,18 +337,36 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                 if($tmpval > $this->changeMemory){
                     $this->changeMemory = $tmpval;
                 }
+
             }else{
-			
+
                 $this->premExit = true; // i.e. exited before got through all prods
+
             }
 								
-			echo $productXml;
+			return $productXml;
     }
     
 	public function microtime_float() {
 		list ($msec, $sec) = explode(' ', microtime());
 		$microtime = (float)$msec + (float)$sec;
 		return $microtime;
+	}
+	
+	function return_bytes($val) {
+		$val = trim($val);
+		$last = strtolower($val[strlen($val)-1]);
+			switch($last) {
+				// The 'G' modifier is available since PHP 5.1.0
+				case 'g':
+					$val *= 1024;
+				case 'm':
+					$val *= 1024;
+				case 'k':
+					$val *= 1024;
+			}
+
+		return $val;
 	}
     
     /**
