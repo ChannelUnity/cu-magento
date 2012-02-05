@@ -325,14 +325,15 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$shippingAddress->setShippingDescription((string) $order->ShippingInfo->Service);
 			$shippingAddress->setPaymentMethod('channelunitypayment');
             
-			$quote->getPayment()->importData(array(
-                   'method' => 'channelunitypayment',
-                   'channelunity_orderid' => (string) $order->OrderId, //TODO
-                   'channelunity_remoteorderid' => (string) $order->OrderId,
-                   'channelunity_remotechannelname' => (string) $order->ServiceSku,
-                 //  'channelunity_remoteusername' => (string) $order->channelunityRemoteUsername, //TODO
-            ));
-            
+              $dataForPayment  = array(
+                                       'method' => 'channelunitypayment',
+                                       'channelunity_orderid' => (string) $order->OrderId, //TODO
+                                       'channelunity_remoteorderid' => (string) $order->OrderId,
+                                       'channelunity_remotechannelname' => (string) $order->ServiceSku,
+                                       //  'channelunity_remoteusername' => (string) $order->channelunityRemoteUsername, //TODO
+                                       );
+			$quote->getPayment()->importData($dataForPayment);
+          //    $quote->getPayment()->setAdditionalInformation($dataForPayment);
 			$quote->collectTotals()->save();
             
 			if (version_compare(Mage::getVersion(), "1.4.0.0", ">=")) {
