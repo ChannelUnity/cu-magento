@@ -16,7 +16,8 @@ class Camiloo_Channelunity_Model_Payment extends Mage_Payment_Model_Method_Abstr
 	protected $_canUseCheckout = false;
 	protected $_canUseForMultishipping = false;
 	protected $_canUseInternal = false;
-	
+	protected $_canCapture = true;
+    
     /**
      * overwrites the method of Mage_Payment_Model_Method_Cc
      * Assign data to info model instance

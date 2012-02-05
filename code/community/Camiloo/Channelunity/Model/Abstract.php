@@ -168,7 +168,7 @@ class Camiloo_Channelunity_Model_Abstract
         }
         catch (Exception $e)
         {
-            $this->terminate('Error - Unknown response from validation server');
+            $this->terminate('Error - Unknown response from validation server '.$e);
 
         }
         curl_close($session);

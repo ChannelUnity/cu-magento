@@ -82,7 +82,10 @@
         <models>
             <channelunity>
                 <class>Camiloo_Channelunity_Model</class>
-            </channelunity> 
+            </channelunity>
+            <channelunitycustomrate>
+                <class>Camiloo_Channelunity_Model_Customrate</class>
+            </channelunitycustomrate>
         </models>
         <resources>
             <channelunity_setup>
@@ -180,41 +183,25 @@
                 </observers>
             </sales_order_shipment_save_after>
         </events>
-    </global>	
+    </global>
     <default>
-     <!--   <payment>
-            <amzpaymentmethodde>
+       <carriers>
+           <channelunitycustomrate>
+              <active>1</active>
+              <model>channelunity/customrate</model>
+              <title>ChannelUnity Shipping</title>
+              <name>ChannelUnity Rate</name>
+           </channelunitycustomrate>
+       </carriers>
+       <payment>
+            <channelunitypayment>
                 <active>1</active>
-                <model>channelunity/paymentmethodde</model>
-                <order_status>pending</order_status>
-                <title>Paid at Amazon.de</title>
+                <model>channelunity/payment</model>
+                <order_status>processing</order_status>
+                <title>ChannelUnity Order</title>
                 <allowspecific>0</allowspecific>
                 <group>offline</group>
-            </amzpaymentmethodde>
-            <amzpaymentmethoduk>
-                <active>1</active>
-                <model>channelunity/paymentmethoduk</model>
-                <order_status>pending</order_status>
-                <title>Paid at Amazon.co.uk</title>
-                <allowspecific>0</allowspecific>
-                <group>offline</group>
-            </amzpaymentmethoduk>
-            <amzpaymentmethodcom>
-                <active>1</active>
-                <model>channelunity/paymentmethodcom</model>
-                <order_status>pending</order_status>
-                <title>Paid at Amazon.com</title>
-                <allowspecific>0</allowspecific>
-                <group>offline</group>
-            </amzpaymentmethodcom>
-            <amzpaymentmethodfr>
-                <active>1</active>
-                <model>channelunity/paymentmethodfr</model>
-                <order_status>pending</order_status>
-                <title>Paid at Amazon.fr</title>
-                <allowspecific>0</allowspecific>
-                <group>offline</group>
-            </amzpaymentmethodfr>
-		</payment> -->
+            </channelunitypayment>
+		</payment> 
 	</default>
 </config>

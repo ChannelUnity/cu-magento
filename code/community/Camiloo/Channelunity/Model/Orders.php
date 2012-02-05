@@ -94,7 +94,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 	}
 
 	public function doCreate($dataArray) {
-		
+	
+        
 		/**********
 		*	TODO: Make this handle the HasTax flags and calculate ex tax as necessary.
 		****
@@ -146,16 +147,24 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 		
 		foreach ($dataArray->Orders->Order as $order) {
 		
-			$quote = Mage::getModel('sales/quote')->setStoreId(1  /*(string) $order->storeId TODO */);
+          echo "<Info>Next order: {$order->OrderId} Create Quote</Info>";
+            
+          try {
+		
+			$quote = Mage::getModel('sales/quote')->setStoreId((string) $dataArray->StoreviewId);
 			
 			// we need to verify (from our XML) that we can create customer accounts
 			// and that we can contact the customer.
 			
+            
+            echo "<Info>Create Customer</Info>";
+
+            
 			$customer = Mage::getModel('customer/customer')
-							->setWebsiteId((string) $order->websiteId)
-							->loadByEmail((string) $order->customer->email);
+							->setWebsiteId((string) $dataArray->WebsiteId)
+							->loadByEmail((string) $order->BillingInfo->Email);
 					
-			if ($customer->getId() > 0){
+			if ($customer->getId() > 0) {
 				$quote->assignCustomer($customer);
 			} else {
 				if ((string) $order->customer->canCreateCustomer) {
@@ -168,24 +177,24 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 						// within a welcome email. So lets do this.
 						
 						$customer = Mage::getModel('customer/customer');
-					
+                        
 						$customerData = array(
-							"firstname"=>$this->fixEncoding((string) $order->customer->firstname),
-							"lastname"=>$this->fixEncoding((string) $order->customer->surname),
-							"email"=>(string) $order->customer->email,
-							"website_id"=>(string) $order->websiteId,
+							"firstname" => $this->fixEncoding((string) $order->customer->firstname),
+							"lastname" => $this->fixEncoding((string) $order->customer->surname),
+							"email" => (string) $order->customer->email,
+							"website_id" => (string) $order->websiteId,
 						);
-				
+                        
 						$customer->addData($customerData);
 						$customer->save();
 						$customer->setPassword($customer->generatePassword(8))->save();
-						$customer->sendNewAccountEmail();	
-						$customer->save();				
+						$customer->sendNewAccountEmail();
+						$customer->save();
 						
 						// and now to assign the customer onto the quote.
 						$quote->assignCustomer($customer);	
-			
-					}else{
+                        
+					} else {
 						// create the order as a guest.
 						$quote->setCustomerFirstname($this->fixEncoding((string) $order->customer->firstname));
 						$quote->setCustomerLastname($this->fixEncoding((string) $order->customer->surname));
@@ -193,100 +202,275 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 						$quote->setCustomerIsGuest(1);
 					}
                 
-			} else {
+                } else {
 					// create the order as a guest.
-					$quote->setCustomerFirstname($this->fixEncoding((string) $order->customer->firstname));
-					$quote->setCustomerLastname($this->fixEncoding((string) $order->customer->surname));
-					$quote->setCustomerEmail((string) $order->customer->email);
+					$quote->setCustomerFirstname($this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)));
+					$quote->setCustomerLastname($this->fixEncoding($this->getLastName((string) $order->BillingInfo->Name)));
+					$quote->setCustomerEmail((string) $order->BillingInfo->Email);
 					$quote->setCustomerIsGuest(1);
-			}
+                }
             }
 			
+            echo "<Info>Add Products</Info>";
+            
+            echo "<Info>Set currency {$order->Currency}</Info>";
+            
+            $quote->getStore()->setCurrentCurrencyCode((string) $order->Currency);
 			
+            $storeCurrency = $quote->getStore()->getBaseCurrencyCode();
+            
+            $currencyObject = Mage::getModel('directory/currency');
+            $reverseRate = $currencyObject->getResource()->getRate($storeCurrency, (string) $order->Currency);
+            
+            echo "<ReverseConversionRate>$reverseRate</ReverseConversionRate>";
+            
+          //  $mths = get_class_methods($quote->getStore());
+          //  print_r($mths);
+            
 			// add product(s)
 			foreach ($order->OrderItems->Item as $orderitem) {
 				$product = Mage::getModel('catalog/product')->loadByAttribute('sku', (string) $orderitem->SKU);
                 
-                // TODO create stub if needed
+                
                 // TODO check what SKU is mapped to - or is this taken care of at CU end?
                 
-				$item = Mage::getModel('sales/quote_item');
-				$item->setQuote($quote)->setProduct($product);
-				$item->setData('qty', (string) $orderitem->itemQuantityOrdered);
-				$item->setData('custom_price', (string) $orderitem->itemPriceEach);
-				$quote->addItem($item);
+                if (is_object($product)) {
+                    
+                    $product->setPrice(((string) $orderitem->Price) / $reverseRate);
+                    
+                    $item = Mage::getModel('sales/quote_item');
+                    $item->setQuote($quote)->setProduct($product);
+                    $item->setData('qty', (string) $orderitem->Quantity);
+                    $quote->addItem($item);
+                }
+                else {
+                    echo "<Info>Can't find SKU to add to quote ".(string) $orderitem->SKU.", trying to create stub</Info>";
+                    
+                    // Create stub if needed
+					$this->createStubProduct((string) $orderitem->SKU, (string) $orderitem->Name, 
+                                             (string) $dataArray->WebsiteId, 
+                                             (string) $order->OrderId, (string) $orderitem->Price, 
+                                             (string) $orderitem->Quantity);
+                    
+                    // Try once again to add our item to the quote
+                    $product = Mage::getModel('catalog/product')->loadByAttribute('sku', 
+                                                                                  (string) $orderitem->SKU);
+                    
+                    if (is_object($product)) {
+                        
+                        $product->setPrice(((string) $orderitem->Price) / $reverseRate);
+                        
+                        $item = Mage::getModel('sales/quote_item');
+                        $item->setQuote($quote)->setProduct($product);
+                        $item->setData('qty', (string) $orderitem->Quantity);
+                        $quote->addItem($item);
+                    }
+                    else {
+                        echo "<Info>Can't find SKU to add to quote ".(string) $orderitem->SKU."</Info>";
+                    }
+                }
 			}
+            
+            
+            echo "<Info>Set Billing Address</Info>";
+            
+            $postcode = $this->fixEncoding((string) $order->ShippingInfo->PostalCode);
+            $postcode = str_replace("-", "_", $postcode); // can throw exception if - in postcode
 		
 			// set the billing address
 			$billingAddressData = array(
-                'firstname' => $this->fixEncoding((string) $order->BillingInfo->Name),
-                'lastname' => $this->fixEncoding((string) $order->BillingInfo->Name),
+                'firstname' => $this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)),
+                'lastname' => $this->fixEncoding($this->getLastName((string) $order->BillingInfo->Name)),
                 'email' =>  (string) $order->BillingInfo->Email,
                 'telephone' =>  (string) $order->BillingInfo->PhoneNumber,
-            /*
-            'street' =>  (string) $this->fixEncoding((string) $order->billingAddress->addressLine1."\n"
-                .(string) $order->billingAddress->addressLine2
-                ."\n".(string) $order->billingAddress->addressLine3),
-			'city' =>  $this->fixEncoding((string) $order->billingAddress->addressCity),
-			'postcode' =>  $this->fixEncoding((string) $order->billingAddress->addressZip),
-			'region' =>  (string) $order->billingAddress->addressState,
-			'country_id' =>  (string) $order->billingAddress->addressCountry,*/
+            
+            'street' =>  (string) $this->fixEncoding((string) $order->ShippingInfo->Address1."\n"
+                .(string) $order->ShippingInfo->Address2
+                ."\n".(string) $order->ShippingInfo->Address3),
+			'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
+			'postcode' =>  $postcode,
+			'region' =>  (string) $order->ShippingInfo->State,
+			'region_id' =>  (string) $order->ShippingInfo->State,
+			'country_id' =>  (string) $order->ShippingInfo->Country
 			);
-			 
+            
 	 		// add the billing address to the quote.
 			$billingAddress = $quote->getBillingAddress()->addData($billingAddressData);
+              
+              
+              echo "<Info>Set Shipping Address</Info>";
 			
 			// set the shipping address
 			$shippingAddressData = array(
-				'firstname' => $this->fixEncoding((string) $order->ShippingInfo->RecipientName),
-				'lastname' => $this->fixEncoding((string) $order->ShippingInfo->RecipientName),
+				'firstname' => $this->fixEncoding($this->getFirstName((string) $order->ShippingInfo->RecipientName)),
+				'lastname' => $this->fixEncoding($this->getLastName((string) $order->ShippingInfo->RecipientName)),
 				'street' =>  (string) $this->fixEncoding((string) $order->ShippingInfo->Address1
                      ."\n".(string) $order->ShippingInfo->Address2
                      ."\n".(string) $order->ShippingInfo->Address3),
 				'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
-				'postcode' =>  $this->fixEncoding((string) $order->ShippingInfo->PostalCode),
+				'postcode' => $postcode,
 				'region' =>  (string) $order->ShippingInfo->State,
+				'region_id' =>  (string) $order->ShippingInfo->State,
 				'country_id' =>  (string) $order->ShippingInfo->Country,
 			//	'email' =>  (string) $order->ShippingInfo->email,
 				'telephone' =>  (string) $order->ShippingInfo->PhoneNumber
 			);
+            
+            Mage::getSingleton('core/session')->setShippingPrice(((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
 	
 			// add the billing address to the quote.
 			$shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
-			 
-			$shippingAddress->setShippingMethod('ChannelUnity');
+            $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
+			$shippingAddress->setShippingMethod('channelunitycustomrate_channelunitycustomrate');
 			$shippingAddress->setShippingDescription((string) $order->ShippingInfo->Service);
-			$shippingAddress->setShippingPrice((string) $order->ShippingInfo->ShippingPrice);
 			$shippingAddress->setPaymentMethod('channelunitypayment');
-			 
+            
 			$quote->getPayment()->importData(array(
-												   'method' => 'channelunitypayment',
-												   'channelunity_orderid' => (string) $order->channelunityId,
-												   'channelunity_remoteorderid' => (string) $order->channelunityRemoteOrderId,
-												   'channelunity_remotechannelname' => (string) $order->channelunityChannelName,
-												   'channelunity_remoteusername' => (string) $order->channelunityRemoteUsername,
-												   ));
-			 
+                   'method' => 'channelunitypayment',
+                   'channelunity_orderid' => (string) $order->OrderId, //TODO
+                   'channelunity_remoteorderid' => (string) $order->OrderId,
+                   'channelunity_remotechannelname' => (string) $order->ServiceSku,
+                 //  'channelunity_remoteusername' => (string) $order->channelunityRemoteUsername, //TODO
+            ));
+            
 			$quote->collectTotals()->save();
-			 
-			if (version_compare(Mage::getVersion(), "1.4.0.0", ">=")){
+            
+			if (version_compare(Mage::getVersion(), "1.4.0.0", ">=")) {
 				$service = Mage::getModel('sales/service_quote', $quote);
-			}else{
+			} else {
 				$service = Mage::getModel('channelunity/ordercreatebackport', $quote);
 			}
 			
 			$service->submitAll();
 			$newOrder = $service->getOrder(); // returns full order object.
-		
-			
-			
+            
+            if (!is_object($newOrder)) {
+                echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
+                continue;
+            }
+            else {
+                echo "<Imported>".((string) $order->OrderId)."</Imported>";
+            }
+              
+          } catch (Exception $x) {
+              echo "<Exception><![CDATA[".$x->getMessage()."]]></Exception>";
+              echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
+              continue;
+          }
+            
+            $newOrder->addStatusToHistory('processing', 'Order imported from ChannelUnity', false);
+            
+            // This order will have been paid for, otherwise it won't have imported
+            
+            $invoiceId = Mage::getModel('sales/order_invoice_api')
+                ->create($newOrder->getIncrementId(), array());
+            
+            $invoice = Mage::getModel('sales/order_invoice')
+                ->loadByIncrementId($invoiceId);
+            
+            
+            /**
+             * Pay invoice
+             * i.e. the invoice state is now changed to 'Paid'
+             */
+            $invoice->capture()->save();
+            
+            if ($newOrder->getTotalPaid() == 0) {
+                $newOrder->setTotalPaid($newOrder->getTotalDue());
+            }
+            if ($newOrder->getBaseTotalPaid() == 0) {
+                $newOrder->setBaseTotalPaid($newOrder->getBaseTotalDue());
+            }
+            
+            /** Add gift message */
+            if (isset($order->ShippingInfo->GiftMessage)) {
+                
+				$message = Mage::getModel('giftmessage/message');
+                
+              	// $gift_sender = $message->getData('sender');
+                // $gift_recipient = $message->getData('recipient');
+                
+                $message->setMessage($order->ShippingInfo->GiftMessage);
+				$message->save();
+                
+                $gift_message_id = $message->getId();
+                
+                $newOrder->setData('gift_message_id', $gift_message_id);
+			}
+            
+            $newOrder->setCreatedAt(strtotime((string) $order->PurchaseDate));
+            $newOrder->save();
 		}
 		
 	}
+    
+    private function createStubProduct($missingSku, $productTitle, $websiteID, $keyorder, $price, $qty) {
+        $product = new Mage_Catalog_Model_Product();
+        
+        $db = Mage::getSingleton("core/resource")->getConnection("core_write");
+        $table_prefix = Mage::getConfig()->getTablePrefix();
+        $sql = "SELECT entity_type_id FROM  {$table_prefix}eav_entity_type WHERE entity_type_code='catalog_product'";
+        $result = $db->query($sql);
+        $row = $result->fetch();
+        
+        $sql = "SELECT attribute_set_id FROM {$table_prefix}eav_attribute_set WHERE entity_type_id='".$row['entity_type_id']."' ORDER BY attribute_set_id ASC";
+        $result = $db->query($sql);
+        $row = $result->fetch();	
+        $attributeSetId = $row['attribute_set_id'];
+        
+        // Build the product
+        $product->setSku($missingSku);
+        $product->setAttributeSetId($attributeSetId);
+        $product->setTypeId('simple');
+        $product->setName($productTitle);
+        //TODO set the attribute marked as the SKU attribute
+        
+        $product->setWebsiteIDs(array($websiteID)); # derive website ID from store.
+        $product->setDescription('Product missing from imported order ID '.$keyorder);
+        $product->setShortDescription('Product missing from imported order ID '.$keyorder);
+        $product->setPrice($price); # Set some price    
+        
+        // Default Magento attribute
+        $product->setWeight('0.01');
+        
+        $product->setVisibility(1); // not visible
+        $product->setStatus(1);	// status = enabled, other price shows as 0.00 in the order
+        $product->setTaxClassId(0); # My default tax class
+        $product->setStockData(array(
+                                     'is_in_stock' => 1,
+                                     'qty' => $qty
+                                     ));
+        
+        $product->setCreatedAt(strtotime('now'));
+        
+        $product->save();
+    }
+    
+    private function getFirstName($name) {
+        $lastSpacePos = strrpos($name, " ");
+        if ($lastSpacePos !== FALSE) {
+            
+            return substr($name, 0, $lastSpacePos);
+        }
+        else {
+            
+            return $name;
+        }
+    }
 	
+	private function getLastName($name) {
+        $exp = explode(" ", $name);
+        if (count($exp) > 0) {
+            
+            return $exp[count($exp) - 1];
+        }
+        else {
+            
+            return "___";
+        }
+    }
 	
-	
-	public function doUpdate($dataArray){
+	public function doUpdate($dataArray) {
 		
 	}	
 	

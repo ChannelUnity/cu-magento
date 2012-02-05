@@ -8,15 +8,26 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
  
- $order = Mage::getModel('sales/order')->load($this->getMethod()->getInfoInstance()->getData('parent_id'));	
- $remoteOrderId = $this->getMethod()->getInfoInstance()->getData('channelunity_remoteorderid');
- $remoteChannelName = $this->getMethod()->getInfoInstance()->getData('channelunity_remotechannelname');
- $remoteUserId = $this->getMethod()->getInfoInstance()->getData('channelunity_remoteusername');
-
+$ii = $this->getMethod()->getInfoInstance();
+    
+ $order = Mage::getModel('sales/order')->load($ii->getData('parent_id'));	
+ $remoteOrderId = $ii->getData('channelunity_remoteorderid');
+ $remoteChannelName = $ii->getData('channelunity_remotechannelname');
+ $remoteUserId = $ii->getData('channelunity_remoteusername');
+    
+    
+    // TODO - not able to extract the data here
+    
 
 echo "<b>".$this->__("ChannelUnity Imported Order")."</b><br />
 ".$this->__("Placed On").": ".$remoteChannelName."<br />
-".$this->__("Remote Order ID").": ".$remoteOrderId."<br />";
+".$this->__("Remote Order ID").": ".$remoteOrderId."<br />
+    ";
+    
+    foreach ($this->getInfo()->getMethodInstance()->getData() as $k => $v) {
+        echo "$k<br/>";
+        
+    }
 
 if($remoteUserId != ""){
 	echo $this->__("Remote Customer Username").": ".$remoteUserId."<br />";
