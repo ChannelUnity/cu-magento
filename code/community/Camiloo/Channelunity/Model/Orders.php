@@ -224,9 +224,6 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             
             echo "<ReverseConversionRate>$reverseRate</ReverseConversionRate>";
             
-          //  $mths = get_class_methods($quote->getStore());
-          //  print_r($mths);
-            
 			// add product(s)
 			foreach ($order->OrderItems->Item as $orderitem) {
 				$product = Mage::getModel('catalog/product')->loadByAttribute('sku', (string) $orderitem->SKU);
@@ -325,6 +322,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$shippingAddress->setShippingDescription((string) $order->ShippingInfo->Service);
 			$shippingAddress->setPaymentMethod('channelunitypayment');
             
+              // TODO - get order flags so we know its an FBA order
+              
               $dataForPayment  = array(
                                        'method' => 'channelunitypayment',
                                        'channelunity_orderid' => (string) $order->OrderId, //TODO
