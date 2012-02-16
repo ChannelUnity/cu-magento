@@ -111,12 +111,15 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
      * Order is cancelled and has been saved. post order status change msg to CU
      */
     public function checkForCancellation(Varien_Event_Observer $observer) {
-        /*
+        
 		$order = $observer->getOrder();
+		if($order->getState() === 'canceled'){
                         
         $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderStatus($order);
         $this->postToChannelUnity($xml, "OrderStatusUpdate");
-        */
+        
+		}
+        
 	}
 
     /**
