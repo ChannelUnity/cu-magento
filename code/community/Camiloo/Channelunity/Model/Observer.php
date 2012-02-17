@@ -127,7 +127,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
      */
     public function saveTrackingToAmazon(Varien_Event_Observer $observer)
 	{
-	    /*
+	    
         // Only mark as shipped when order has tracking information.
         $track = $observer->getEvent()->getTrack();
         $order = $track->getShipment()->getOrder();
@@ -143,7 +143,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                                                                                 $track->getTitle(),
                                                                                 $track->getNumber());
         $this->postToChannelUnity($xml, "OrderStatusUpdate");
-        */
+        
 	}
 
     public function shipAmazon(Varien_Event_Observer $observer)

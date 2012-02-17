@@ -262,7 +262,7 @@ class Camiloo_Channelunity_Model_Abstract
         return "";
     }
 
-    public function postToChannelUnity($xml, $requestType) {
+    public function postToChannelUnity($Request) {
 
         $session = curl_init();
 
