@@ -286,7 +286,7 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                     $prodDataValue = $product->getData($attr);
                 }
                 
-                if ('Varien_Object' == get_class($prodDataValue)) {
+                if (is_object($prodDataValue)) {
                     
                     $prodDataValue = $prodDataValue->toXml();
                 }
