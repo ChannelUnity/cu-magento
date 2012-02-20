@@ -287,8 +287,10 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                 }
                 
                 if (is_object($prodDataValue)) {
-                    
-                    $prodDataValue = $prodDataValue->toXml();
+                    if ('Varien_Object' == get_class($prodDataValue)) {
+                        
+                        $prodDataValue = $prodDataValue->toXml();
+                    }
                 }
                 if (is_array($prodDataValue)) {
                     
@@ -297,11 +299,11 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                 }
                 else {
                     
-                    if ('Mage_Catalog_Model_Resource_Eav_Mysql4_Product_Type_Configurable_Attribute_Collection' == get_class($prodDataValue)) {
-                        $productXml .= "    <$attr><![CDATA[Mage_Core_Model_Mysql4_Collection_Abstract]]></$attr>\n";
-                    }
-                    else if (!is_object($prodDataValue)){
+                    if (!is_object($prodDataValue)) {
                         $productXml .= "    <$attr><![CDATA[".$prodDataValue."]]></$attr>\n";
+                    } else if ('Mage_Catalog_Model_Resource_Eav_Mysql4_Product_Type_Configurable_Attribute_Collection' 
+                               == get_class($prodDataValue)) {
+                        $productXml .= "    <$attr><![CDATA[Mage_Core_Model_Mysql4_Collection_Abstract]]></$attr>\n";
                     }
                 }
             }
