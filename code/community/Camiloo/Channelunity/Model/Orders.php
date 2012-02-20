@@ -56,9 +56,19 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $orderStatus = "Processing";
         }
         
-        $orderXml =  "<SubscriptionID>{$order->getData('channelunity_subscriptionid')}</SubscriptionID>\n";
-        $orderXml .= "<OrderID>{$order->getData('channelunity_orderid')}</OrderID>\n";
-        $orderXml .= "<OrderStatus>{$orderStatus}</OrderStatus>\n";
+        $collection = Mage::getModel('sales/order_payment_transaction')->getCollection()
+            ->setOrderFilter($order);
+        
+        $orderXml = "";
+        
+        foreach ($collection as $txn) {
+            $infoArray = $txn->getAdditionalInformation();
+            $orderXml .= "<SubscriptionID>{$infoArray['SubscriptionId']}</SubscriptionID>\n";
+            $orderXml .= "<OrderID>{$infoArray['RemoteOrderID']}</OrderID>\n";
+        
+            break;
+        }
+        $orderXml .= "<OrderStatus>$orderStatus</OrderStatus>\n";
     
         return $orderXml;
     }
@@ -70,7 +80,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         
         $orderXml =  $this->generateCuXmlForOrderStatus($order);
         
-        $orderXml .= "<ShipmentDate>{}</ShipmentDate>\n"; //TODO
+        $orderXml .= "<ShipmentDate>".date("c")."</ShipmentDate>\n";
         $orderXml .= "<CarrierName>$carrierName</CarrierName>\n";
         $orderXml .= "<ShipmentMethod>$shipMethod</ShipmentMethod>\n";
         $orderXml .= "<TrackingNumber>$trackNumber</TrackingNumber>\n";
@@ -83,7 +93,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 		 if (function_exists('mb_strlen')) {
 		 	
 		    $cur_encoding = mb_detect_encoding($in_str);
-		   	if($cur_encoding == "UTF-8" && mb_check_encoding($in_str,"UTF-8")){
+		   	if ($cur_encoding == "UTF-8" && mb_check_encoding($in_str, "UTF-8")) {
 		  		
 		   	} else {
 		  		$in_str = utf8_encode($in_str);
@@ -211,18 +221,22 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 }
             }
 			
-            echo "<Info>Add Products</Info>";
-            
-            echo "<Info>Set currency {$order->Currency}</Info>";
+            echo "<Info>Order currency {$order->Currency}</Info>";
             
             $quote->getStore()->setCurrentCurrencyCode((string) $order->Currency);
 			
             $storeCurrency = $quote->getStore()->getBaseCurrencyCode();
+              
+            echo "<Info>Store currency $storeCurrency</Info>";
             
             $currencyObject = Mage::getModel('directory/currency');
             $reverseRate = $currencyObject->getResource()->getRate($storeCurrency, (string) $order->Currency);
             
-            echo "<ReverseConversionRate>$reverseRate</ReverseConversionRate>";
+              if ($reverseRate == "") {
+                  $reverseRate = 1.0;
+              }
+              
+            echo "<ConversionRate>$reverseRate</ConversionRate>";
             
 			// add product(s)
 			foreach ($order->OrderItems->Item as $orderitem) {
@@ -322,18 +336,12 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$shippingAddress->setShippingDescription((string) $order->ShippingInfo->Service);
 			$shippingAddress->setPaymentMethod('channelunitypayment');
             
-              // TODO - get order flags so we know its an FBA order
+              // TODO - get order flags so we know if its an FBA order
               
-              $dataForPayment  = array(
-                                       'method' => 'channelunitypayment',
-                                       'channelunity_orderid' => (string) $order->OrderId, //TODO
-                                       'channelunity_remoteorderid' => (string) $order->OrderId,
-                                       'channelunity_remotechannelname' => (string) $order->ServiceSku,
-                                       //  'channelunity_remoteusername' => (string) $order->channelunityRemoteUsername, //TODO
-                                       );
-			$quote->getPayment()->importData($dataForPayment);
-          //    $quote->getPayment()->setAdditionalInformation($dataForPayment);
-			$quote->collectTotals()->save();
+              $quote->getPayment()->importData(array(
+                                                     'method' => 'channelunitypayment'
+                                                     ));
+            $quote->collectTotals()->save();
             
 			if (version_compare(Mage::getVersion(), "1.4.0.0", ">=")) {
 				$service = Mage::getModel('sales/service_quote', $quote);
@@ -344,6 +352,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$service->submitAll();
 			$newOrder = $service->getOrder(); // returns full order object.
             
+              
+           //   print_r($newOrder->getData()); die;
+              
             if (!is_object($newOrder)) {
                 echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
                 continue;
@@ -358,7 +369,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
               continue;
           }
             
-            $newOrder->addStatusToHistory('processing', 'Order imported from ChannelUnity', false);
+            $newOrder->setState('processing', 'processing', 'Order imported from ChannelUnity', false);
             
             // This order will have been paid for, otherwise it won't have imported
             
@@ -368,19 +379,54 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $invoice = Mage::getModel('sales/order_invoice')
                 ->loadByIncrementId($invoiceId);
             
-            
             /**
              * Pay invoice
              * i.e. the invoice state is now changed to 'Paid'
              */
             $invoice->capture()->save();
             
-            if ($newOrder->getTotalPaid() == 0) {
-                $newOrder->setTotalPaid($newOrder->getTotalDue());
+            $newOrder->setTotalPaid($newOrder->getGrandTotal());
+            $newOrder->setBaseTotalPaid($newOrder->getBaseGrandTotal());
+            
+            /** Make a transaction to store CU info */
+            $transaction = Mage::getModel('sales/order_payment_transaction');
+            $transaction->setOrderPaymentObject($newOrder->getPayment());
+            $transaction->setOrder($newOrder);
+            $transaction->setTxnType('capture');
+            $transaction->setAdditionalInformation('SubscriptionId', (string) $dataArray->SubscriptionId);
+            $transaction->setAdditionalInformation('RemoteOrderID', (string) $order->OrderId);
+            
+            $serviceType = (string) $order->ServiceSku;
+            switch ($serviceType) {
+                case "CU_AMZ_UK":
+                    $serviceType = "Amazon.co.uk";
+                    break;
+                case "CU_AMZ_COM":
+                    $serviceType = "Amazon.com";
+                    break;
+                case "CU_AMZ_DE":
+                    $serviceType = "Amazon.de";
+                    break;
+                case "CU_AMZ_FR":
+                    $serviceType = "Amazon.fr";
+                    break;
+                case "CU_AMZ_CA":
+                    $serviceType = "Amazon.ca";
+                    break;
+                case "CU_AMZ_IT":
+                    $serviceType = "Amazon.it";
+                    break;
+                case "CU_AMZ_ES":
+                    $serviceType = "Amazon.es";
+                    break;
+                case "CU_AMZ_JP":
+                    $serviceType = "Amazon.co.jp";
+                    break;
+                    
             }
-            if ($newOrder->getBaseTotalPaid() == 0) {
-                $newOrder->setBaseTotalPaid($newOrder->getBaseTotalDue());
-            }
+            
+            $transaction->setAdditionalInformation('ServiceType', $serviceType);
+            $transaction->save();
             
             /** Add gift message */
             if (isset($order->ShippingInfo->GiftMessage)) {

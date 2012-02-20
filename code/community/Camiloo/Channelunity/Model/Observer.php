@@ -12,8 +12,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 ."</SourceURL>\n";
                 
         $xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
-                
-        $xml .= Mage::getModel('channelunity/products')->generateCuXmlForProduct($product);
+        
+        $xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($product->getId(), $storeViewId);
         
         $xml .= "</Products>\n";
         
@@ -31,29 +31,23 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                     
             $storeViewId = Mage::helper('adminhtml/catalog_product_edit_action_attribute')->getSelectedStoreId();
             $xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
-                    
             
             $pids = Mage::helper('adminhtml/catalog_product_edit_action_attribute')->getProductIds();
             
             foreach ($pids as $productId) {
-                
-                $product = Mage::getModel('catalog/product')->setStoreId($storeViewId)
-                    ->load($productId);
-            
-                $xml .= Mage::getModel('channelunity/products')->generateCuXmlForProduct($product);
-                
+                $xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct(
+                                                                 $productId, $storeViewId);
             }
             
             $xml .= "</Products>\n";
             
             $this->postToChannelUnity($xml, "ProductData");
-        }
-        
+        }        
     }
     
     public function orderWasPlaced(Varien_Event_Observer $observer)
 	{
-	/*	if (is_object($observer)) {
+		if (is_object($observer)) {
             
 			$ev = $observer->getEvent();
             
@@ -65,16 +59,16 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                     
 					$items = $order->getAllItems();
                     
-					$this->getItemsForUpdateCommon($items);
+					$this->getItemsForUpdateCommon($items, $order->getStore()->getId());
                     
 				}
 			}
-		}*/
+		}
 	}
     
-    public function getItemsForUpdateCommon($items) {
+    public function getItemsForUpdateCommon($items, $storeId) {
         
-		foreach($items as $item) {
+		foreach ($items as $item) {
             
             $sku = $item->getSku();
             
@@ -85,7 +79,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             }
             
             // Item was ordered on website, stock will have reduced, update to CU
-            $xml = Mage::getModel('channelunity/products')->generateCuXmlForProduct($prodTemp);
+            $xml = Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct(
+                                                              $prodTemp->getId(), $storeId);
             
             $this->postToChannelUnity($xml, "ProductData");
 		}
@@ -93,18 +88,16 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     
     public function onInvoicePaid(Varien_Event_Observer $observer)
 	{
-	    /*
-		if (is_object($observer) && is_object($observer->getInvoice()))
+        if (is_object($observer) && is_object($observer->getInvoice()))
 		{
 			$order = $observer->getInvoice()->getOrder();
             
 			if (is_object($order))
 			{
 				$items = $order->getAllItems();
-				$this->getItemsForUpdateCommon($items);
+				$this->getItemsForUpdateCommon($items, $order->getStore()->getId());
 			}
 		}
-		*/
 	}
     
     /**
@@ -113,13 +106,9 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     public function checkForCancellation(Varien_Event_Observer $observer) {
         
 		$order = $observer->getOrder();
-		if($order->getState() === 'canceled'){
-                        
+        
         $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderStatus($order);
         $this->postToChannelUnity($xml, "OrderStatusUpdate");
-        
-		}
-        
 	}
 
     /**
@@ -127,11 +116,10 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
      */
     public function saveTrackingToAmazon(Varien_Event_Observer $observer)
 	{
-	    
         // Only mark as shipped when order has tracking information.
         $track = $observer->getEvent()->getTrack();
         $order = $track->getShipment()->getOrder();
-        
+                
         if ($track->getCarrierCode() == "custom") {
             $carrierName = $track->getTitle();	
         } else {
@@ -143,17 +131,23 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                                                                                 $track->getTitle(),
                                                                                 $track->getNumber());
         $this->postToChannelUnity($xml, "OrderStatusUpdate");
-        
 	}
 
     public function shipAmazon(Varien_Event_Observer $observer)
     {
-        /*
-        // TODO
-            
-	    $shipment = $observer->getEvent()->getShipment();
+        $shipment = $observer->getEvent()->getShipment();
         $order = $shipment->getOrder();
-        */
+        
+        $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order,
+                                                                                "",
+                                                                                "",
+                                                                                "");
+        $this->postToChannelUnity($xml, "OrderStatusUpdate");
+    }
+    
+    public function categorySave(Varien_Event_Observer $observer) {
+        $myStoreURL = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+        $categoryStatus = Mage::getModel('channelunity/categories')->postCategoriesToCU($myStoreURL);
     }
 }
 ?>

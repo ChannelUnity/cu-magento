@@ -182,6 +182,24 @@
                     </channelunity>
                 </observers>
             </sales_order_shipment_save_after>
+            <catalog_category_prepare_save>
+                 <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>categorySave</method>
+                    </channelunity>
+                </observers>
+            </catalog_category_prepare_save>
+            <catalog_controller_category_delete>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>categorySave</method>
+                    </channelunity>
+                </observers>
+            </catalog_controller_category_delete>
         </events>
     </global>
     <default>

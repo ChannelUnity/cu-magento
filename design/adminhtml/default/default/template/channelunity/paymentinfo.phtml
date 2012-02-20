@@ -8,24 +8,31 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
  
-//$ii = $this->getMethod()->getInfoInstance()->getData();
+$ii = $this->getMethod()->getInfoInstance();
     
-    /*
- $order = Mage::getModel('sales/order')->load($ii->getData('parent_id'));	
- $remoteOrderId = $ii->getData('channelunity_remoteorderid');
- $remoteChannelName = $ii->getData('channelunity_remotechannelname');
- $remoteUserId = $ii->getData('channelunity_remoteusername');
-    
-    
-    // TODO - not able to extract the data here
-    
+$order = Mage::getModel('sales/order')->load($ii->getData('parent_id'));
 
-echo "<b> ChannelUnity Imported Order </b><br />
- Placed On :  $remoteChannelName <br />
- Remote Order ID :  $remoteOrderId <br />";
-     
-if($remoteUserId != ""){
-	echo $this->__("Remote Customer Username").": ".$remoteUserId."<br />";
-}
-*/
+   // print_r($order->getData());
+    
+$collection = Mage::getModel('sales/order_payment_transaction')->getCollection()
+    ->setOrderFilter($order);
+
+foreach ($collection as $txn) {
+
     echo "<b> ChannelUnity Imported Order </b><br/>";
+    
+    $infoArray = $txn->getAdditionalInformation();
+    if (isset($infoArray['SubscriptionId'])) {
+        echo "Subscription ID: {$infoArray['SubscriptionId']} <br/>";
+    }
+    
+    if (isset($infoArray['RemoteOrderID'])) {
+        echo "Order ID: {$infoArray['RemoteOrderID']} <br/>";
+    }
+    
+    if (isset($infoArray['ServiceType'])) {
+        echo "Marketplace: {$infoArray['ServiceType']} <br/>";
+    }
+    
+    break;
+}

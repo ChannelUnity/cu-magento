@@ -11,7 +11,7 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 	private $maxMemoryChar;
     private $maxruntime = 30;
 	private $changeMemory = 0;
-    private $upperLimit = 500;
+    private $upperLimit = 250;
 	private $countCurr = 0;
 	private $rangeNext = 0;
     private $premExit = false;
@@ -160,6 +160,161 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
         }
     }
     
+    public function generateCuXmlForSingleProduct($productId, $storeId) {
+        $productXml = "";
+        
+        $product = Mage::getModel('catalog/product');
+        $product->setStoreId($storeId)->load($productId);
+        
+        try {
+            $imageUrl = $product->getImageUrl();
+        } catch (Exception $e) {
+            $imageUrl = '';
+        }
+        
+        $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
+        $qty = $stock->getData('qty');
+        
+        $catids = implode(',', $product->getCategoryIds());
+        $categories = $product->getCategoryIds();
+        $catnames = "";
+        
+        foreach ($categories as $k => $_category_id) {
+            $_category = Mage::getModel('catalog/category')->load($_category_id);
+            $catnames .= ($_category->getName()) . ", ";
+        }
+        
+        $attributeSetModel = Mage::getModel("eav/entity_attribute_set");
+        $attributeSetModel->load($product->getData('attribute_set_id'));
+        $attributeSetName = $attributeSetModel->getAttributeSetName();
+        
+        $productXml = "<Product>\n";
+        $productXml .= "  <RemoteId>".$product->getId()."</RemoteId>\n";
+        $productXml .= "  <ProductType>".$attributeSetName."</ProductType>\n";
+        $productXml .= "  <Title><![CDATA[{$product->getData('name')} ]]></Title>\n";
+        $productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
+        $productXml .= "  <SKU><![CDATA[{$product->getData('sku')}]]></SKU>\n";
+        $productXml .= "  <Price>{$product->getData('price')}</Price>\n";
+        $productXml .= "  <Quantity>{$qty}</Quantity>\n";
+        $productXml .= "  <Category>{$catids}</Category>\n";
+        $productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
+        $productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
+        
+        // Add associated/child product references if applicable
+        $productXml .= "  <RelatedSKUs>\n";
+        
+        $variationXml = "  <Variations>\n";
+        
+        if ($product->getData("type_id") == 'configurable') {
+            
+            $childProducts = Mage::getModel('catalog/product_type_configurable')
+            ->getUsedProducts(null, $product);
+            
+            foreach ($childProducts as $cp) {
+                
+                $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
+            }
+            
+            $confAttributes = $product->getTypeInstance(true)->getConfigurableAttributesAsArray($product);
+            
+            // Get the attribute(s) which vary
+            if (is_array($confAttributes)) {
+                foreach ($confAttributes as $cattr) {
+                    $cattr = serialize($cattr);
+                    
+                    $findTemp = "\"attribute_code\";";
+                    
+                    $cattr = explode($findTemp, $cattr);
+                    
+                    if (isset($cattr[1])) {
+                        
+                        $cattr = explode("\"", $cattr[1]);
+                        
+                        if (isset($cattr[1])) {
+                            
+                            $variationXml .= "<Variation><![CDATA[{$cattr[1]}]]></Variation>\n";
+                            
+                        }
+                    }
+                }
+            }
+            
+        }
+        else if ($product->getTypeId() == 'grouped') {
+            
+            // TODO need to do variations?
+            
+            $childProducts = $product->getTypeInstance(true)->getAssociatedProducts($product);
+            foreach ($childProducts as $cp) {
+                
+                $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
+            }
+        }
+        
+        $variationXml .= "  </Variations>\n";
+        $productXml .= "  </RelatedSKUs>\n";
+        $productXml .= $variationXml;
+        
+        $productXml .= "  <Custom>\n";
+        
+        // Enumerate all other attribute values
+        
+        $attributeNames = array_keys($product->getData());
+        
+        foreach ($attributeNames as $k => $attr) {
+            
+            if ($attr != 'name' && $attr != 'description' && $attr != 'sku'
+                && $attr != 'price' && $attr != 'qty'
+                && $attr != 'stock_item' && $attr != 'tier_price') {
+                
+                if ($attribute = $product->getResource()->getAttribute($attr)) {
+                    
+                    $myval = $product->getData($attr);
+                    
+                    if (is_array($myval)) {
+                        $myval = serialize($myval);
+                    }
+                    
+                    $prodDataValue = $attribute->getSource()
+                    ->getOptionText($myval);
+                    
+                    if ($prodDataValue == '') {
+                        
+                        $prodDataValue = $myval;
+                    }
+                } else {
+                    $prodDataValue = $product->getData($attr);
+                }
+                
+                if ('Varien_Object' == get_class($prodDataValue)) {
+                    
+                    $prodDataValue = $prodDataValue->toXml();
+                }
+                if (is_array($prodDataValue)) {
+                    
+                    $prodDataValue = $product->getData($attr);
+                    $productXml .= "    <$attr><![CDATA[$prodDataValue]]></$attr>\n";
+                }
+                else {
+                    
+                    if ('Mage_Catalog_Model_Resource_Eav_Mysql4_Product_Type_Configurable_Attribute_Collection' == get_class($prodDataValue)) {
+                        $productXml .= "    <$attr><![CDATA[Mage_Core_Model_Mysql4_Collection_Abstract]]></$attr>\n";
+                    }
+                    else if (!is_object($prodDataValue)){
+                        $productXml .= "    <$attr><![CDATA[".$prodDataValue."]]></$attr>\n";
+                    }
+                }
+            }
+        }
+        
+        $productXml .= "  </Custom>\n";
+        $productXml .= "</Product>\n";
+        
+        unset($product);
+
+        return $productXml;
+    }
+    
     public function generateCuXmlForProductEcho($args) {
         echo $this->generateCuXmlForProduct($args);
     }
@@ -175,162 +330,11 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 			&& $this->countCurr <= $this->upperLimit) 
 		{
             $row = $args['row'];
-			$product = Mage::getModel('catalog/product');
-			$product->setStoreId($args['storeId'])->load($row["entity_id"]);
-            
-			$this->rangeNext = $row["entity_id"] + 1;
+        	$this->rangeNext = $row["entity_id"] + 1;
         
-            try {
-                $imageUrl = $product->getImageUrl();
-            } catch (Exception $e) {
-                $imageUrl = '';
-            }
+            $productXml .= $this->generateCuXmlForSingleProduct($row["entity_id"], $args["storeId"]);
             
-            $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-            $qty = $stock->getData('qty');
-            
-            $catids = implode(',', $product->getCategoryIds());
-            $categories = $product->getCategoryIds();
-            $catnames = "";
-            
-            foreach ($categories as $k => $_category_id) {
-                $_category = Mage::getModel('catalog/category')->load($_category_id);
-                $catnames .= ($_category->getName()) . ", ";
-            }
-            
-            $_name = $product->getData('name');
-            $_description = $product->getData('description');
-            
-            
-            $attributeSetModel = Mage::getModel("eav/entity_attribute_set");
-            $attributeSetModel->load($row['attribute_set_id']);
-            $attributeSetName = $attributeSetModel->getAttributeSetName();
-                                        
-            $productXml = "<Product>\n";
-            $productXml .= "  <RemoteId>".$product->getId()."</RemoteId>\n";
-            $productXml .= "  <ProductType>".$attributeSetName."</ProductType>\n";
-            $productXml .= "  <Title><![CDATA[{$_name} ]]></Title>\n";
-            $productXml .= "  <Description><![CDATA[{$_description} ]]></Description>\n";
-            $productXml .= "  <SKU><![CDATA[{$row['sku']}]]></SKU>\n";
-            $productXml .= "  <Price>{$product->getData('price')}</Price>\n";
-            $productXml .= "  <Quantity>{$qty}</Quantity>\n";
-            $productXml .= "  <Category>{$catids}</Category>\n";
-            $productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
-            $productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
-            
-            // Add associated/child product references if applicable
-            $productXml .= "  <RelatedSKUs>\n";
-                
-            $variationXml = "  <Variations>\n";
-            
-            if ($row["type_id"] == 'configurable') {
-                
-                $childProducts = Mage::getModel('catalog/product_type_configurable')
-                    ->getUsedProducts(null, $product);
-                
-                foreach ($childProducts as $cp) {
-                
-                    $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
-                }
-            
-                $confAttributes = $product->getTypeInstance(true)->getConfigurableAttributesAsArray($product);
-                
-                // Get the attribute(s) which vary
-                if (is_array($confAttributes)) {
-                    foreach ($confAttributes as $cattr) {
-                        $cattr = serialize($cattr);
-                        
-                        $findTemp = "\"attribute_code\";";
-                        
-                        $cattr = explode($findTemp, $cattr);
-                        
-                        if (isset($cattr[1])) {
-                        
-                            $cattr = explode("\"", $cattr[1]);
-                            
-                            if (isset($cattr[1])) {
-                            
-                                $variationXml .= "<Variation><![CDATA[{$cattr[1]}]]></Variation>\n";
-                                
-                            }
-                        }
-                    }
-                }
-                
-            }
-            else if ($product->getTypeId() == 'grouped') {
-                
-                // TODO need to do variations?
-                
-                $childProducts = $product->getTypeInstance(true)->getAssociatedProducts($product);
-                foreach ($childProducts as $cp) {
-                    
-                    $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
-                }
-            }
-            
-            $variationXml .= "  </Variations>\n";
-            $productXml .= "  </RelatedSKUs>\n";
-            $productXml .= $variationXml;
-            
-            $productXml .= "  <Custom>\n";
-            
-            // Enumerate all other attribute values
-            
-            $attributeNames = array_keys($product->getData());
-            
-            foreach ($attributeNames as $k => $attr) {
-                
-                if ($attr != 'name' && $attr != 'description' && $attr != 'sku'
-                    && $attr != 'price' && $attr != 'qty'
-                    && $attr != 'stock_item' && $attr != 'tier_price') {
-                    
-                    if ($attribute = $product->getResource()->getAttribute($attr)) {
-                        
-                        $myval = $product->getData($attr);
-                        
-                        if (is_array($myval)) {
-                            $myval = serialize($myval);
-                        }
-                        
-                        $prodDataValue = $attribute->getSource()
-                            ->getOptionText($myval);
-                        
-                        if ($prodDataValue == '') {
-                                                    
-                            $prodDataValue = $myval;
-                        }
-                    } else {
-                        $prodDataValue = $product->getData($attr);
-                    }
-                    
-                    if ('Varien_Object' == get_class($prodDataValue)) {
-                        
-                        $prodDataValue = $prodDataValue->toXml();
-                    }
-                    if (is_array($prodDataValue)) {
-                        
-                        $prodDataValue = $product->getData($attr);
-                        $productXml .= "    <$attr><![CDATA[$prodDataValue]]></$attr>\n";
-                    }
-                    else {
-                        
-                        if ('Mage_Catalog_Model_Resource_Eav_Mysql4_Product_Type_Configurable_Attribute_Collection' == get_class($prodDataValue)) {
-                            $productXml .= "    <$attr><![CDATA[Mage_Core_Model_Mysql4_Collection_Abstract]]></$attr>\n";
-                        }
-                        else if (!is_object($prodDataValue)){
-                            $productXml .= "    <$attr><![CDATA[".$prodDataValue."]]></$attr>\n";
-                        }
-                    }
-                }
-            }
-            
-            $productXml .= "  </Custom>\n";
-            $productXml .= "</Product>\n";
-            
-            unset($product);
-                        
-            // after....			
+            // after....
             $this->endtime = $this->microtime_float();
             $this->runtime = round($this->endtime - $this->starttime);
             
