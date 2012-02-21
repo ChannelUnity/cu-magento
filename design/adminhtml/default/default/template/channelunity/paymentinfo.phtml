@@ -34,5 +34,9 @@ foreach ($collection as $txn) {
         echo "Marketplace: {$infoArray['ServiceType']} <br/>";
     }
     
+    if (isset($infoArray['AmazonFBA']) && $infoArray['AmazonFBA'] == 'Yes') {
+        echo "Order was fulfilled by Amazon<br/>";
+    }
+    
     break;
 }
