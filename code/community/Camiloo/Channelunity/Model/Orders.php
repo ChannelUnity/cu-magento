@@ -329,15 +329,31 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             
             Mage::getSingleton('core/session')->setShippingPrice(((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
 	
-			// add the billing address to the quote.
+			// add the shipping address to the quote.
 			$shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
-            $shippingAddress->setCollectShippingRates(true)->collectShippingRates();
+            /////////////////////////////////////////////
+              $method = Mage::getModel('shipping/rate_result_method');
+              $method->setCarrier('channelunitycustomrate');
+              $method->setCarrierTitle('ChannelUnity Shipping');
+              $method->setMethod('channelunitycustomrate');
+              $method->setMethodTitle('ChannelUnity Rate');
+              
+              $shipPrice = Mage::getSingleton('core/session')->getShippingPrice();
+              
+              $method->setPrice($shipPrice);
+              $method->setCost($shipPrice);
+              
+              
+              $rate = Mage::getModel('sales/quote_address_rate')
+                ->importShippingRate($method);
+              
+              $shippingAddress->addShippingRate($rate);
+              
+            /////////////////////////////////////////////
 			$shippingAddress->setShippingMethod('channelunitycustomrate_channelunitycustomrate');
 			$shippingAddress->setShippingDescription((string) $order->ShippingInfo->Service);
 			$shippingAddress->setPaymentMethod('channelunitypayment');
-            
-              // TODO - get order flags so we know if its an FBA order
-              
+                          
               $quote->getPayment()->importData(array(
                                                      'method' => 'channelunitypayment'
                                                      ));
@@ -352,8 +368,6 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$service->submitAll();
 			$newOrder = $service->getOrder(); // returns full order object.
             
-              
-           //   print_r($newOrder->getData()); die;
               
             if (!is_object($newOrder)) {
                 echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
@@ -422,10 +436,17 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 case "CU_AMZ_JP":
                     $serviceType = "Amazon.co.jp";
                     break;
-                    
             }
             
             $transaction->setAdditionalInformation('ServiceType', $serviceType);
+            
+            // get order flags so we know whether it's an FBA order
+            if (isset($order->OrderFlags) && ( ((string) $order->OrderFlags) == "AMAZON_FBA")) {
+                
+                $transaction->setAdditionalInformation('AmazonFBA', 'Yes');
+                // TODO - can't set 'complete' state manually - ideally import tracking info and create shipment in Mage
+      //          $newOrder->setState('complete', 'complete', 'Order was fulfilled by Amazon', false);
+            }
             $transaction->save();
             
             /** Add gift message */
