@@ -21,9 +21,9 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     }
     
     public function hookToControllerActionPostDispatch($observer) {
-     
-        if ($observer->getEvent()->getControllerAction()->getFullActionName() 
-            == 'adminhtml_catalog_product_action_attribute_save')
+        $evname = $observer->getEvent()->getControllerAction()->getFullActionName();
+        
+        if ($evname == 'adminhtml_catalog_product_action_attribute_save')
         {
             $xml = "<Products>\n";
             $xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
@@ -42,7 +42,15 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $xml .= "</Products>\n";
             
             $this->postToChannelUnity($xml, "ProductData");
-        }        
+        }
+        else if ($evname == 'adminhtml_catalog_category_save') {
+            
+            $this->categorySave($observer);
+        }
+        else if ($evname == 'adminhtml_catalog_category_delete') {
+            
+            $this->categoryDelete($observer);
+        }
     }
     
     public function orderWasPlaced(Varien_Event_Observer $observer)
@@ -148,6 +156,10 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     public function categorySave(Varien_Event_Observer $observer) {
         $myStoreURL = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
         $categoryStatus = Mage::getModel('channelunity/categories')->postCategoriesToCU($myStoreURL);
+    }
+    
+    public function categoryDelete(Varien_Event_Observer $observer) {
+        //TODO
     }
 }
 ?>
