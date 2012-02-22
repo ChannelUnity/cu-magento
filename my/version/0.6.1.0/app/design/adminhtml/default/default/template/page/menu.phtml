@@ -1,0 +1,83 @@
+<?php
+/**
+ * Camilooframework
+ *
+ * NOTICE OF LICENSE
+ *
+ * This source file is subject to the Academic Free License (AFL 3.0)
+ * that is bundled with this package in the file LICENSE_AFL.txt.
+ * It is also available through the world-wide-web at this URL:
+ * http://opensource.org/licenses/afl-3.0.php
+ * If you did not receive a copy of the license and are unable to
+ * obtain it through the world-wide-web, please send an email
+ * to license@magentocommerce.com so we can send you a copy immediately.
+ *
+ * DISCLAIMER
+ *
+ * Do not edit or add to this file if you wish to upgrade Camilooframework to newer
+ * versions in the future. If you wish to customize Camilooframework for your
+ * needs please refer to http://www.magentocommerce.com for more information.
+ *
+ * @category    design
+ * @package     default_default
+ * @copyright   Copyright (c) 2011 Magento Inc. (http://www.magentocommerce.com)
+ * @license     http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
+ */
+?>
+<?php drawMenuLevel($this->getMenuArray()); ?>
+<?php function drawMenuLevel($_menu, $_level=0) { ?>
+    <ul <?php if(!$_level): ?>id="nav" style="width:100%;"<?php endif ?>>
+        <?php foreach ($_menu as $key=>$_item): ?>
+        <li id="<?php echo $key; ?>" <?php if(!empty($_item['children'])): ?>onmouseover="Element.addClassName(this,'over')" onmouseout="Element.removeClassName(this,'over')"<?php endif ?> class=" <?php echo (!$_level && !empty($_item['active']))?' active':'' ?> <?php echo !empty($_item['children'])?' parent':'' ?><?php echo (!empty($_level) && !empty($_item['last']))?' last':'' ?> level<?php echo $_level ?>">
+		<a <?php if($_item['url'] != ""){ ?> onclick="clickmenu(this);setLocation('<?php echo $_item['url'] ?>');"<?php } ?> class="<?php echo ($_level===0 && !empty($_item['active']))?'active':'' ?>" ><?php echo $_item['label'] ?><?php if(!$_level): ?><?php endif ?></a>
+            <?php if(!empty($_item['children'])): ?>
+                <?php drawMenuLevel($_item['children'], $_level+1); ?>
+            <?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+	    </ul>
+<?php }//function ?>
+
+            <script type="text/javascript">
+	
+                var exposeurl;
+      			var exposeelement;
+				
+	  			function clickmenu(element){
+					exposeelement = element;
+					// remove the active className from any A..
+					$$('#nav a').each(function(e){e.removeClassName('active');});
+					Element.addClassName(element,'active');
+					try {
+					Element.addClassName(exposeelement.up().up().previous(),'active');
+					}catch(exception){
+					}
+					try {
+					Element.addClassName(exposeelement.up().up().previous().up().up().previous(),'active');
+					}catch(exception){
+					}				
+				}
+				        
+                    if(document.location.hash != ""){
+                        // the URL has a hashtag. This could be a URL to load on refresh. Lets check it out.
+                        exposeurl = base64_decode(document.location.hash.substr(1));
+                        if(strpos(exposeurl,'://')){
+                            // this is a URL. load it!
+                            makeajaxcall(exposeurl);
+
+                            // we should now reposition our button. this is trickier.
+                            $$('.buttonbox_label').each(function(elmt) {
+                                if(strpos(elmt.onclick,exposeurl)){
+                                    tmpelement = elmt.onclick.toString().substr(28);
+                                    tmpelement = tmpelement.split(";");
+
+                                    // this code changes the selected button...
+                                    eval(tmpelement[0]+";");
+                            }
+                            });
+                        }
+                    }
+                    
+	
+            </script>
+
