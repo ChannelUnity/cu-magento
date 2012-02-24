@@ -205,7 +205,7 @@
     <default>
        <carriers>
            <channelunitycustomrate>
-              <active>1</active>
+              <active>0</active>
               <model>channelunity/customrate</model>
               <title>ChannelUnity Shipping</title>
               <name>ChannelUnity Rate</name>
