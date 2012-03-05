@@ -395,29 +395,32 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
         
         // get the highest product ID
         $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->setStoreId($storeId);
-        $collectionOfProduct->setOrder('entity_id','DESC');
+        $collectionOfProduct->setOrder('entity_id', 'DESC');
         $collectionOfProduct->setPageSize(1);
         $collectionOfProduct->setCurPage(1);
         $totp = $collectionOfProduct->getFirstItem();
         $totp = $totp->getId();
 
-        $collectionOfProduct = Mage::getModel($this->_collection)->getCollection(); 
+        $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->setStoreId($storeId);
+        
+        $totalNumProducts = $collectionOfProduct->count(); // TODO not loading whole collection is it???
+        
         $collectionOfProduct->addAttributeToFilter("entity_id", array('gteq' => $rangeFrom))
                 ->setOrder('entity_id','ASC');
         
         $collectionOfProduct->addAttributeToFilter("entity_id", array('lt' => $rangeFrom + $this->upperLimit))
                 ->setOrder('entity_id','ASC');
         
-        //  monitor memory and max exec
-        if($this->maxMemoryChar == "M"){
-              $this->maxMemory = str_replace("M","",$this->maxMemory);
+        // monitor memory and max exec
+        if ($this->maxMemoryChar == "M") {
+              $this->maxMemory = str_replace("M", "", $this->maxMemory);
               $this->maxMemory = $this->maxMemory * 1024 * 1024;
-        }else if($this->maxMemoryChar == "G"){
-              $this->maxMemory = str_replace("G","",$maxMemory);
+        } else if($this->maxMemoryChar == "G") {
+              $this->maxMemory = str_replace("G", "", $maxMemory);
               $this->maxMemory = $this->maxMemory * 1024 * 1024 * 1024;
         }   
         
-        if($this->maxMemory < 100){
+        if ($this->maxMemory < 100) {
             $this->maxMemory = 10000000000;
         }
         
@@ -430,10 +433,12 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 		   
 		if ($this->rangeNext <= $totp) {
 			echo "<RangeNext>".$this->rangeNext."</RangeNext>\n";
-		}else {
+		} else {
 			// Start from beginning next time
 			echo "<RangeNext>0</RangeNext>\n";
 		}
+        
+        echo "<TotalProducts>$totalNumProducts</TotalProducts>\n";
 			
         echo "</Products>\n";
     }
