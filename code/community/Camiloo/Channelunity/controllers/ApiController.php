@@ -74,18 +74,20 @@ class Camiloo_Channelunity_ApiController extends Mage_Core_Controller_Front_Acti
             switch ($type) {
                 
                 case "Ping":
-                
                     Mage::getModel('channelunity/orders')->verifyMyself($request);
-                
                 break;
                 
                 case "OrderNotification":
-                    Mage::getModel('channelunity/orders')->doCreate($request);
-                break;				
+                    Mage::getModel('channelunity/orders')->doUpdate($request);
+                break;
+                    
+                case "OrderDataUpdate":
+                    
+                break;
                 
                 case "ProductData":
                 	error_reporting(E_ALL);
-					ini_set("display_errors","On");
+					ini_set("display_errors", "On");
                     $attributeStatus = Mage::getModel('channelunity/products')->postAttributesToCU();
                     Mage::getModel('channelunity/products')->postProductTypesToCU($request);
                     Mage::getModel('channelunity/products')->doRead($request);

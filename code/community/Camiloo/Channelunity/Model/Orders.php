@@ -103,59 +103,11 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 		return $in_str;
 	}
 
-	public function doCreate($dataArray) {
-	
-        
-		/**********
-		*	TODO: Make this handle the HasTax flags and calculate ex tax as necessary.
-		****
-         
-         <MerchantName />	The unique merchant name	
-         <SubscriptionID />	The subscription ID to which this message relates	
-         <ServiceSKU />	The channel subscribed to	CU_AMZ_UK
-         <Orders>	Group containing one or more orders	
-         + <Order>	Top level order element	
-         + + <OrderId />	Channel Specific order ID	203-7998859-0936342
-         + + <PurchaseDate />	Date and time on which the order was placed on the Channel	2011-05-24T22:40:24+00:00
-         + + <Currency />	The currency the order was purchased in	GBP
-         + + <OrderItems>	Group of one or more ordered items	
-         + + + <Item>	Information about a line item	
-         + + + + <SKU />	Stock keeping unit	ITEM2424
-         + + + + <Name />	Name of the product	Chocolate Bar
-         + + + + <Quantity />	The quantity purchased	1
-         + + + + <Price />	The price of each individual item including any applicable taxes	1.99
-         + + + + <Tax />	The amount of the price which is tax	0.22
-         + + + </Item>		
-         + + </OrderItems>		
-         + + <ShippingInfo>	Parent element for the shipping information	
-         + + + <RecipientName />	Name of the recipient for delivery	
-         + + + <Address1 />	Line 1 of delivery address	
-         + + + <Address2 />	Line 2 of delivery address	
-         + + + <Address3 />	Line 3 of delivery address	
-         + + + <City />	Delivery city	Manchester
-         + + + <State />	Delivery state (or county for UK)	Lancs
-         + + + <PostalCode />	Delivery postal code or ZIP code	M1 1AA
-         + + + <Country />	Two letter delivery country code	GB
-         + + + <PhoneNumber />	Phone number for the delivery location	01619321015
-         + + + <ShippingPrice />	Price paid for delivery including tax	1.99
-         + + + <ShippingTax />	The amount of the shipping price which was tax	0.22
-         + + + <Service />	The delivery service (e.g. first class, recorded delivery, expedited, etc.)	Standard
-         + + + <DeliveryInstructions />	Instructions for the delivery driver	
-         + + + <GiftWrapPrice />	Price paid for gift wrapping including tax	
-         + + + <GiftWrapTax />	Amount of the gift wrap price which was tax	
-         + + + <GiftWrapType />	Channel Specific gift wrap type	
-         + + + <GiftMessage />	Gift message for the item	
-         + + </ShippingInfo>	
-         
-         + </Order>		
-         </Orders>		
-         
-         *******/		
-	
+	public function doCreate($dataArray, $order) {
 		// this method takes an array of correct structure and creates a valid order creation
 		// request within Magento.
 		
-		foreach ($dataArray->Orders->Order as $order) {
+        
 		
           echo "<Info>Next order: {$order->OrderId} Create Quote</Info>";
             
@@ -240,10 +192,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             
 			// add product(s)
 			foreach ($order->OrderItems->Item as $orderitem) {
-				$product = Mage::getModel('catalog/product')->loadByAttribute('sku', (string) $orderitem->SKU);
-                
-                
-                // TODO check what SKU is mapped to - or is this taken care of at CU end?
+				$product = Mage::getModel('catalog/product')->loadByAttribute((string) $dataArray->SkuAttribute, (string) $orderitem->SKU);
                 
                 if (is_object($product)) {
                     
@@ -293,7 +242,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 'firstname' => $this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)),
                 'lastname' => $this->fixEncoding($this->getLastName((string) $order->BillingInfo->Name)),
                 'email' =>  (string) $order->BillingInfo->Email,
-                'telephone' =>  (string) $order->BillingInfo->PhoneNumber,
+                'telephone' => ( (string) $order->BillingInfo->PhoneNumber == "" ?
+                                (string) $order->ShippingInfo->PhoneNumber :
+                                (string) $order->BillingInfo->PhoneNumber),
             
             'street' =>  (string) $this->fixEncoding((string) $order->ShippingInfo->Address1."\n"
                 .(string) $order->ShippingInfo->Address2
@@ -354,7 +305,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$shippingAddress->setShippingDescription((string) $order->ShippingInfo->Service);
 			$shippingAddress->setPaymentMethod('channelunitypayment');
                           
-              $quote->getPayment()->importData(array(
+            $quote->getPayment()->importData(array(
                                                      'method' => 'channelunitypayment'
                                                      ));
             $quote->collectTotals()->save();
@@ -371,7 +322,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
               
             if (!is_object($newOrder)) {
                 echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
-                continue;
+                return;
             }
             else {
                 echo "<Imported>".((string) $order->OrderId)."</Imported>";
@@ -380,10 +331,11 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
           } catch (Exception $x) {
               echo "<Exception><![CDATA[".$x->getMessage()."]]></Exception>";
               echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
-              continue;
+              return;
           }
-            
-            $newOrder->setState('processing', 'processing', 'Order imported from ChannelUnity', false);
+        
+            $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $order->OrderStatus);
+            $newOrder->setState($ordStatus, $ordStatus, 'Order imported from ChannelUnity', false);
             
             // This order will have been paid for, otherwise it won't have imported
             
@@ -407,6 +359,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $transaction->setOrderPaymentObject($newOrder->getPayment());
             $transaction->setOrder($newOrder);
             $transaction->setTxnType('capture');
+            $transaction->setTxnId((string) $order->OrderId); // TODO check this avail in Mage vers
             $transaction->setAdditionalInformation('SubscriptionId', (string) $dataArray->SubscriptionId);
             $transaction->setAdditionalInformation('RemoteOrderID', (string) $order->OrderId);
             
@@ -465,9 +418,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 $newOrder->setData('gift_message_id', $gift_message_id);
 			}
             
-            $newOrder->setCreatedAt(strtotime((string) $order->PurchaseDate));
+            $newOrder->setCreatedAt(((string) $order->PurchaseDate));
             $newOrder->save();
-		}
+		
 		
 	}
     
@@ -536,13 +489,195 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             return "___";
         }
     }
+    
+    public function CUOrderStatusToMagentoStatus($orderStatus) {
+        if ($orderStatus == 'Processing') {
+            $orderStatus = "processing";
+        }
+        else if ($orderStatus == 'OnHold') {
+            $orderStatus = "holded";
+        }
+        else if ($orderStatus == 'Complete') {
+            $orderStatus = "complete";
+        }
+        else {
+            $orderStatus = "canceled";
+        }
+        
+        return $orderStatus;
+    }
+    
+    private function doSingleOrder($singleOrder, $newOrder) {
+     /*   // 1. Update shipping address
+        
+        $postcode = $this->fixEncoding((string) $singleOrder->ShippingInfo->PostalCode);
+        $postcode = str_replace("-", "_", $postcode); // can throw exception if - in postcode
+        
+        $shippingId = $newOrder->getShippingAddress()->getId();
+        $shipAddress = Mage::getModel('sales/order_address')->load($shippingId);
+        $shipAddress->setFirstname($this->fixEncoding(
+                                                      $this->getFirstName((string) $singleOrder->ShippingInfo->RecipientName)));
+        $shipAddress->setLastname($this->fixEncoding($this->getLastName((string) $singleOrder->ShippingInfo->RecipientName)));
+        $shipAddress->setStreet((string) $this->fixEncoding(
+                                                            (string) $singleOrder->ShippingInfo->Address1
+                                                            ."\n".(string) $singleOrder->ShippingInfo->Address2
+                                                            ."\n".(string) $singleOrder->ShippingInfo->Address3));
+        $shipAddress->setCity($this->fixEncoding((string) $singleOrder->ShippingInfo->City));
+        $shipAddress->setPostcode($postcode);
+        $shipAddress->setRegion((string) $singleOrder->ShippingInfo->State);
+        $shipAddress->setRegionId((string) $singleOrder->ShippingInfo->State);
+        $shipAddress->setCountryId((string) $singleOrder->ShippingInfo->Country);
+        $shipAddress->setTelephone((string) $singleOrder->ShippingInfo->PhoneNumber);
+        $shipAddress->save();
+        
+        // 2. Update billing address
+        */
+        // 3. Update order status
+        $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $singleOrder->OrderStatus);
+        $newOrder->setState($ordStatus, $ordStatus, 'Order updated from ChannelUnity', false);
+     /*   
+        // 4. Update item prices and currency
+        
+        echo "<InfoUpdate>Order currency {$singleOrder->Currency}</InfoUpdate>";
+        $newOrder->getStore()->setCurrentCurrencyCode((string) $singleOrder->Currency);
+        $storeCurrency = $newOrder->getStore()->getBaseCurrencyCode();
+        echo "<InfoUpdate>Store currency $storeCurrency</InfoUpdate>";
+        
+        $currencyObject = Mage::getModel('directory/currency');
+        $reverseRate = $currencyObject->getResource()->getRate($storeCurrency, (string) $singleOrder->Currency);
+        
+        if ($reverseRate == "") {
+            $reverseRate = 1.0;
+        }
+        
+        echo "<ConversionRate>$reverseRate</ConversionRate>";
+        
+        
+        
+        
+        $itemColl = $newOrder->getItemsCollection();
+        foreach ($itemColl as $orderItem) {
+            
+            foreach ($singleOrder->OrderItems->Item as $orderitem1) {
+                
+                if (((string) $orderitem1->SKU) == $orderItem->getSku()) {
+                
+                    // -- check what SKU is mapped to
+                    
+                    $priceTemp = ((string) $orderitem1->Price) / $reverseRate;
+                    $qtyTemp = (string) $orderitem1->Quantity;
+                    
+                    $orderItem->setPrice($priceTemp);
+                    $orderItem->setQtyOrdered($qtyTemp);
+                    $orderItem->setOriginalPrice($priceTemp);
+                    $orderItem->setRowTotal($priceTemp * $qtyTemp);
+                    $orderItem->setSubTotal($priceTemp * $qtyTemp);
+                    
+                    break;
+                }
+                
+            }
+        }
+        */
+        $newOrder->save();
+    }
+    
+    public function reserveStock($dataArray, $order) {
+        foreach ($order->OrderItems->Item as $orderitem) {
+            
+            $product = Mage::getModel('catalog/product')->loadByAttribute(
+                  (string) $dataArray->SkuAttribute, (string) $orderitem->SKU);
+            
+            if (is_object($product)) {
+                $qty = (string) $orderitem->Quantity;
+                
+                $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId()); // Load the stock for this product
+                $stock->setQty($stock->getQty() - $qty); // Set to new Qty           
+                $stock->save(); // Save
+            }
+        }
+    }
+    
+    public function releaseStock($dataArray, $order) {
+        foreach ($order->OrderItems->Item as $orderitem) {
+            
+            $product = Mage::getModel('catalog/product')->loadByAttribute(
+                (string) $dataArray->SkuAttribute, (string) $orderitem->SKU);
+            
+            if (is_object($product)) {
+                $qty = (string) $orderitem->Quantity;
+                
+                $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId()); // Load the stock for this product
+                $stock->setQty($stock->getQty() + $qty); // Set to new Qty           
+                $stock->save(); // Save
+            }
+        }
+    }
 	
 	public function doUpdate($dataArray) {
-		
-	}	
-	
-
-
+        
+        foreach ($dataArray->Orders->Order as $order) {
+            
+            $bOrderExisted = false;
+            
+            try {
+                $transaction = Mage::getModel('sales/order_payment_transaction')
+                    ->loadByTxnId((string) $order->OrderId);
+                
+                $newOrder = $transaction->getOrder();
+                if (is_object($newOrder)) {
+                    $this->doSingleOrder($order, $newOrder);
+                    $bOrderExisted = true;
+                }     
+            }
+            catch (Exception $x1) {
+                
+            }
+            // Additional information good for failsafe
+            if (!$bOrderExisted) {
+                $oid = (string) $order->OrderId;
+                
+                $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
+                    ->addFieldToFilter('additional_information',
+                        array('like'=>'%s:13:"RemoteOrderID";s:'.strlen($oid).':"'.$oid.'"%'))->getFirstItem();
+            
+                $newOrder = $transaction->getOrder();
+                if (is_object($newOrder)) {
+                    $this->doSingleOrder($order, $newOrder);
+                    $bOrderExisted = true;
+                }  
+            }
+            
+            if (!$bOrderExisted) {
+                if (((string) $order->OrderStatus) == "Processing") {
+                    // if the stock isn't already decreased, decrease it
+                    
+                    if (!isset($order->StockReservedCart) || ((string) $order->StockReservedCart) == "0") {
+                        echo "<StockReserved>".((string) $order->OrderId)."</StockReserved>";
+                        
+                        $this->reserveStock($dataArray, $order);
+                    }
+                    
+                    $this->doCreate($dataArray, $order);
+                }
+                else if (((string) $order->OrderStatus) == "OnHold") {
+                    // Reserve the stock
+                    echo "<Imported>".((string) $order->OrderId)."</Imported>";
+                    echo "<StockReserved>".((string) $order->OrderId)."</StockReserved>";
+                    
+                    $this->reserveStock($dataArray, $order);
+                }
+            }
+            
+            if ($bOrderExisted) {
+                if (((string) $order->OrderStatus) == "Cancelled") {
+                    // Put back our stock
+                    $this->releaseStock($dataArray, $order);
+                }
+                echo "<Imported>".((string) $order->OrderId)."</Imported>";
+            }
+        }
+	}
 }
 
 ?>
