@@ -335,7 +335,20 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
           }
         
             $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $order->OrderStatus);
-            $newOrder->setState($ordStatus, $ordStatus, 'Order imported from ChannelUnity', false);
+        
+            try {
+                $newOrder->setState($ordStatus, $ordStatus, 'Order imported from ChannelUnity', false);
+                
+            }
+            catch (Exception $x1) {
+                
+                try {
+                    $newOrder->setState('closed', 'closed', 'Order imported from ChannelUnity', false);
+                    
+                }
+                catch (Exception $x2) {
+                }
+            }
             
             // This order will have been paid for, otherwise it won't have imported
             
@@ -534,7 +547,20 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         */
         // 3. Update order status
         $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $singleOrder->OrderStatus);
-        $newOrder->setState($ordStatus, $ordStatus, 'Order updated from ChannelUnity', false);
+        
+        try {
+            $newOrder->setState($ordStatus, $ordStatus, 'Order updated from ChannelUnity', false);
+            
+        }
+        catch (Exception $x1) {
+            
+            try {
+                $newOrder->setState('closed', 'closed', 'Order updated from ChannelUnity', false);
+                
+            }
+            catch (Exception $x2) {
+            }
+        }
      /*   
         // 4. Update item prices and currency
         
@@ -666,6 +692,10 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     echo "<StockReserved>".((string) $order->OrderId)."</StockReserved>";
                     
                     $this->reserveStock($dataArray, $order);
+                }
+                else {
+                    // Just create the order (e.g. previously completed)
+                    $this->doCreate($dataArray, $order);
                 }
             }
             

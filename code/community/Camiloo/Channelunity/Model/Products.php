@@ -399,7 +399,7 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
         $collectionOfProduct->setPageSize(1);
         $collectionOfProduct->setCurPage(1);
         $totp = $collectionOfProduct->getFirstItem();
-        $totp = $totp->getId();
+        $totp = $totp->getEntityId();
 
         $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->setStoreId($storeId);
         
@@ -408,8 +408,8 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
         $collectionOfProduct->addAttributeToFilter("entity_id", array('gteq' => $rangeFrom))
                 ->setOrder('entity_id','ASC');
         
-        $collectionOfProduct->addAttributeToFilter("entity_id", array('lt' => $rangeFrom + $this->upperLimit))
-                ->setOrder('entity_id','ASC');
+      //  $collectionOfProduct->addAttributeToFilter("entity_id", array('lt' => $rangeFrom + $this->upperLimit))
+      //          ->setOrder('entity_id','ASC');
         
         // monitor memory and max exec
         if ($this->maxMemoryChar == "M") {
@@ -424,9 +424,14 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
             $this->maxMemory = 10000000000;
         }
         
-        Mage::getSingleton('core/resource_iterator')->walk($collectionOfProduct->getSelect(), 
+        $query = str_replace("INNER JOIN", "LEFT JOIN", $collectionOfProduct->getSelect());
+        
+        echo "<Query><![CDATA[$query]]></Query>\n";
+        
+        Mage::getSingleton('core/resource_iterator')->walk($query, 
                                                            array(array($this, 'generateCuXmlForProductEcho')), 
-                                                           array('storeId' => $storeId));
+                                                           array('storeId' => $storeId),
+                                                           $collectionOfProduct->getSelect()->getAdapter());
     
 		// Let the cloud know where to start from the next time it calls
 		//   for product data
