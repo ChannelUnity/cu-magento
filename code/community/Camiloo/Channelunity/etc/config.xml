@@ -89,10 +89,10 @@
         </models>
         <resources>
             <channelunity_setup>
-              <!--  <setup>
+                <setup>
                     <module>Camiloo_Channelunity</module>
-                    <class>Camiloo_Channelunity_Model_Entity_Setup</class>
-                </setup> -->
+                    <class>Camiloo_Channelunity_Model_Entity</class>
+                </setup>
                 <connection>
                     <use>core_setup</use>
                 </connection>
@@ -130,13 +130,23 @@
                 </observers>			
 			</catalog_product_save_after>
 			<controller_action_postdispatch>
-               <observers>
-                    <controller_action_after>
-                        <class>channelunity/observer</class>
-                         <method>hookToControllerActionPostDispatch</method>
-                      </controller_action_after>
-                  </observers>
-               </controller_action_postdispatch>
+                    <observers>
+
+                        <controller_action_after>
+
+                            <class>channelunity/observer</class>
+
+ 
+                            <method>hookToControllerActionPostDispatch</method>
+
+ 
+ 
+                        </controller_action_after>
+
+ 
+                    </observers>
+
+                </controller_action_postdispatch>
             <sales_order_place_after>
                 <observers>
                     <channelunity>
