@@ -63,9 +63,12 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         
         foreach ($collection as $txn) {
             $infoArray = $txn->getAdditionalInformation();
-            $orderXml .= "<SubscriptionID>{$infoArray['SubscriptionId']}</SubscriptionID>\n";
-            $orderXml .= "<OrderID>{$infoArray['RemoteOrderID']}</OrderID>\n";
-        
+            if (isset($infoArray['SubscriptionId'])) {
+                $orderXml .= "<SubscriptionID>{$infoArray['SubscriptionId']}</SubscriptionID>\n";
+            }
+            if (isset($infoArray['RemoteOrderID'])) {
+                $orderXml .= "<OrderID>{$infoArray['RemoteOrderID']}</OrderID>\n";
+            }
             break;
         }
         $orderXml .= "<OrderStatus>$orderStatus</OrderStatus>\n";
