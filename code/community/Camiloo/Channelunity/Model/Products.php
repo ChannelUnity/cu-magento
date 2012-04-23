@@ -242,7 +242,7 @@
             }
             else if ($product->getTypeId() == 'grouped') {
                 
-                // TODO need to do variations?
+                // Do we need to do variations?
                 
                 $childProducts = $product->getTypeInstance(true)->getAssociatedProducts($product);
                 foreach ($childProducts as $cp) {
