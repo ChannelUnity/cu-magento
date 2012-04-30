@@ -677,6 +677,23 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 }  
             }
             
+            $table_prefix = Mage::getConfig()->getTablePrefix();
+            
+            // See if the order has been imported by the old Amazon module
+            if (!$bOrderExisted && $this->table_exists("{$table_prefix}amazonimport_flatorders")) {
+                $oid = (string) $order->OrderId;
+                $db = Mage::getSingleton("core/resource")->getConnection("core_write");
+                
+                $_sql = "SELECT * FROM {$table_prefix}amazonimport_flatorders WHERE amazon_order_id='$oid'";
+                
+                $result = $db->query($_sql);
+                
+                if ($result->rowCount() > 0) {
+                    $bOrderExisted = true;
+                }
+            }
+            
+            //=======================================================
             if (!$bOrderExisted) {
                 if (((string) $order->OrderStatus) == "Processing") {
                     // if the stock isn't already decreased, decrease it
@@ -711,6 +728,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
         }
 	}
+    
+    public function table_exists($tablename) {
+        $db = Mage::getSingleton("core/resource")->getConnection("core_write");
+        $_sql = "SHOW TABLES LIKE '$tablename';";
+        $result = $db->query($_sql);
+        return $result->rowCount() > 0;
+   }
 }
 
 ?>

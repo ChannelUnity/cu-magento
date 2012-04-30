@@ -10,7 +10,13 @@ class Camiloo_Channelunity_ApiController extends Mage_Core_Controller_Front_Acti
         echo '  </ChannelUnity>';
         die;
     }
-
+	public function testtableAction() {
+		if (Mage::getModel('channelunity/orders')->table_exists("moo")) {
+			echo "true";
+		} else {
+			echo "false";
+		}
+	}
     public function ordertestAction() {
         
         $xml = <<<EOD
