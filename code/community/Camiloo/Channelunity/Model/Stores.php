@@ -37,7 +37,7 @@ class Camiloo_Channelunity_Model_Stores extends Camiloo_Channelunity_Model_Abstr
                 foreach ($storeViews as $storeView) {
                     
                     $messageToSend = "<Store>
-                        <FriendlyName><![CDATA[{$storeView->getData('name')}]]></FriendlyName>
+                        <FriendlyName><![CDATA[{$storeView->getData('name')} - {$storeView->getData('code')}]]></FriendlyName>
                         <URL><![CDATA[{$myURL}]]></URL>
                         <MainCountry><![CDATA[Unknown]]></MainCountry>
                         <FrameworkType><![CDATA[Magento]]></FrameworkType>
