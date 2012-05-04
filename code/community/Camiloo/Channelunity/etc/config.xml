@@ -129,6 +129,15 @@
                     </channelunity>
                 </observers>			
 			</catalog_product_save_after>
+			<catalog_controller_product_delete>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>productWasDeleted</method>
+                    </channelunity>
+                </observers>
+			</catalog_controller_product_delete>
 			<controller_action_postdispatch>
                     <observers>
 

@@ -20,6 +20,26 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
         $this->postToChannelUnity($xml, "ProductData");
     }
     
+    public function productWasDeleted(){
+    	
+    	$product = $observer->getEvent()->getProduct();
+    	
+    	$storeViewId = $product->getStoreId();
+    	
+    	$xml = "<Products>\n";
+    	$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+    	."</SourceURL>\n";
+    	$xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
+    	$xml .= "<ProductID>$product->getId()</ProductID>\n";
+    	$xml .= "<Deleted>TRUE</Deleted>\n";
+    	
+    	$xml .= "</Products>\n";
+    	
+    	$this->postToChannelUnity($xml, "ProductData");
+    	
+    	
+    }
+    
     public function hookToControllerActionPostDispatch($observer) {
         $evname = $observer->getEvent()->getControllerAction()->getFullActionName();
         

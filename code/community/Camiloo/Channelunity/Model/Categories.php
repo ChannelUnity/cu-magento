@@ -48,23 +48,29 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
             <StoreviewId><![CDATA[{$storeViewId}]]></StoreviewId>\n";
             
         foreach ($collection as $category) {
-            
-            $catPathTemp = $category->getData('path');
-            
-            if (strpos($catPathTemp, "$rootCatId/") === 0     // start of path
-                || strpos($catPathTemp, "/$rootCatId/") > 0   // middle of path
-                || strpos($catPathTemp, "/$rootCatId") == (strlen($catPathTemp)-strlen("/$rootCatId")) ) // OR at END of path
-            {
-                $messageToSend .= "<Category>\n";
-                $messageToSend .= "  <ID><![CDATA[{$category->getId()}]]></ID>\n";
-                $messageToSend .= "  <Name><![CDATA[{$category->getName()}]]></Name>\n";
-                $messageToSend .= "  <Position><![CDATA[{$category->getData('position')}]]></Position>\n";
-                $messageToSend .= "  <CategoryPath><![CDATA[{$catPathTemp}]]></CategoryPath>\n";
-                $messageToSend .= "  <ParentID><![CDATA[{$category->getData('parent_id')}]]></ParentID>\n";
-                $messageToSend .= "  <Level><![CDATA[{$category->getData('level')}]]></Level>\n";
-                $messageToSend .= "</Category>\n\n";
-                
-            }
+        	
+        	$children = $category->getChildren();
+        	$pid = $category->getData('parent_id');
+        	$lvl = $category->getData('level');
+        	$childCount = $children->count();
+        		
+	            $catPathTemp = $category->getData('path');
+	            
+	            if (strpos($catPathTemp, "$rootCatId/") === 0     // start of path
+	                || strpos($catPathTemp, "/$rootCatId/") > 0   // middle of path
+	                || strpos($catPathTemp, "/$rootCatId") == (strlen($catPathTemp)-strlen("/$rootCatId")) ) // OR at END of path
+	            {
+	                $messageToSend .= "<Category>\n";
+	                $messageToSend .= "  <ID><![CDATA[{$category->getId()}]]></ID>\n";
+	                $messageToSend .= "  <Name><![CDATA[{$category->getName()}]]></Name>\n";
+	                $messageToSend .= "  <Position><![CDATA[{$category->getData('position')}]]></Position>\n";
+	                $messageToSend .= "  <CategoryPath><![CDATA[{$catPathTemp}]]></CategoryPath>\n";
+	                $messageToSend .= "  <ParentID><![CDATA[{$category->getData('parent_id')}]]></ParentID>\n";
+	                $messageToSend .= "  <Level><![CDATA[{$category->getData('level')}]]></Level>\n";
+	                $messageToSend .= "</Category>\n\n";
+	                
+	            }
+        	
         }
         
         $messageToSend .= "</CategoryList>";
