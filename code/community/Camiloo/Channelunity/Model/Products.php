@@ -376,6 +376,23 @@
             return $val;
         }
         
+        public function doSetValue($request) {
+            $storeId = (string) $request->StoreviewId;
+            $fieldName = (string) $request->FieldName;
+            $fieldValue = (string) $request->FieldValue;
+            $sku = (string) $request->SKU;
+            
+            $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->addStoreFilter($storeId);
+            $collectionOfProduct->setPageSize(1);
+            $collectionOfProduct->setCurPage(1);
+            $collectionOfProduct->addFieldToFilter('sku', $sku);
+            $product = $collectionOfProduct->getFirstItem();
+            
+            // set an attribute for the product
+            $product->setData($fieldName, $fieldValue);
+            $product->save();
+        }
+        
         /**
          * Return a set of product data to CU.
          */
@@ -396,19 +413,19 @@
             try {
                 
                 // get the highest product ID
-                $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->setStoreId($storeId);
+                $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->addStoreFilter($storeId);
                 $collectionOfProduct->setOrder('entity_id', 'DESC');
                 $collectionOfProduct->setPageSize(1);
                 $collectionOfProduct->setCurPage(1);
                 $totp = $collectionOfProduct->getFirstItem();
                 $totp = $totp->getEntityId();
                 
-                $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->setStoreId($storeId);
+                $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->addStoreFilter($storeId);
                 
                 $totalNumProducts = $this->executeQueryScalar(str_replace("SELECT", "SELECT count(*) as count_cu, ", $collectionOfProduct->getSelect()), 'count_cu');
                 
                 $collectionOfProduct->addAttributeToFilter("entity_id", array('gteq' => $rangeFrom))
-                ->setOrder('entity_id', 'ASC');
+                    ->setOrder('entity_id', 'ASC');
                 
                 // monitor memory and max exec
                 if ($this->maxMemoryChar == "M") {
