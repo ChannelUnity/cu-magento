@@ -30,7 +30,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     	$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
     	."</SourceURL>\n";
     	$xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
-    	$xml .= "<ProductID>$product->getId()</ProductID>\n";
+    	$xml .= "<ProductID>{$product->getId()}</ProductID>\n";
     	$xml .= "<Deleted>TRUE</Deleted>\n";
     	
     	$xml .= "</Products>\n";
@@ -70,6 +70,22 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
         else if ($evname == 'adminhtml_catalog_category_delete') {
             
             $this->categoryDelete($observer);
+        }
+        else if ($evname == 'adminhtml_catalog_product_delete') {
+            $xml = "<Products>\n";
+            $xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+            ."</SourceURL>\n";
+            
+            $storeViewId = Mage::helper('adminhtml/catalog_product_edit_action_attribute')->getSelectedStoreId();
+            $xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
+            
+            $productId = $observer->getEvent()->getControllerAction()->getRequest()->getParam('id');
+            
+            $xml .= "<DeletedProductId>".$productId."</DeletedProductId>\n";
+            
+            $xml .= "</Products>\n";
+            
+            $this->postToChannelUnity($xml, "ProductData");
         }
     }
     
