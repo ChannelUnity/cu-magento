@@ -10,6 +10,7 @@ class Camiloo_Channelunity_ApiController extends Mage_Core_Controller_Front_Acti
         echo '  </ChannelUnity>';
         die;
     }
+
 	public function testtableAction() {
 		if (Mage::getModel('channelunity/orders')->table_exists("moo")) {
 			echo "true";
@@ -133,8 +134,8 @@ EOD;
                 Mage::getModel('channelunity/orders')->doUpdate($request);
                 break;
                 
-            case "OrderDataUpdate":
-                
+            case "AttributePush":
+                Mage::getModel('channelunity/products')->doSetValue($request);
                 break;
                 
             case "ProductData":
