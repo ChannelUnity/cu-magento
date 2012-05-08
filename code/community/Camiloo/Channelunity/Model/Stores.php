@@ -29,7 +29,6 @@ class Camiloo_Channelunity_Model_Stores extends Camiloo_Channelunity_Model_Abstr
             
             foreach ($stores as $store) {
                 
-                
                 $storeViews = Mage::getModel('core/store')
                     ->getCollection()->addFieldToFilter('website_id', array('eq' => $website->getData('website_id')))
                     ->addFieldToFilter('group_id', array('eq' => $store->getData('group_id')));
