@@ -49,10 +49,10 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
             
         foreach ($collection as $category) {
         	
-        	$children = $category->getChildren();
+        //	$children = $category->getChildren();
         	$pid = $category->getData('parent_id');
         	$lvl = $category->getData('level');
-        	$childCount = $children->count();
+        //	$childCount = $children->count();
         		
 	            $catPathTemp = $category->getData('path');
 	            
