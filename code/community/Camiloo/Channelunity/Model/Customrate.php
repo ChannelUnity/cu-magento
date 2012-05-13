@@ -20,7 +20,7 @@ class Camiloo_Channelunity_Model_Customrate
         $method->setCarrier('channelunitycustomrate');
         $method->setCarrierTitle($this->getConfigData('title'));
         $method->setMethod('channelunitycustomrate');
-        $method->setMethodTitle($this->getConfigData('name'));
+       // $method->setMethodTitle(Mage::getSingleton('core/session')->getShippingMethod());
         
         $shipPrice = Mage::getSingleton('core/session')->getShippingPrice();
         
