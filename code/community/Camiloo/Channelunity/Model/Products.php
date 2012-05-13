@@ -275,11 +275,17 @@
                             $myval = serialize($myval);
                         }
                         
-                        $prodDataValue = $attribute->getSource()
-                        ->getOptionText($myval);
-                        
-                        if ($prodDataValue == '') {
+                        if (is_object($attribute)) {
                             
+                            $prodDataValue = $attribute->getSource()
+                                ->getOptionText($myval);
+                            
+                            if ($prodDataValue == '') {
+                                
+                                $prodDataValue = $myval;
+                            }
+                        }
+                        else {
                             $prodDataValue = $myval;
                         }
                     } else {
@@ -413,14 +419,14 @@
             try {
                 
                 // get the highest product ID
-                $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->addStoreFilter($storeId);
+                $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
                 $collectionOfProduct->setOrder('entity_id', 'DESC');
                 $collectionOfProduct->setPageSize(1);
                 $collectionOfProduct->setCurPage(1);
                 $totp = $collectionOfProduct->getFirstItem();
                 $totp = $totp->getEntityId();
                 
-                $collectionOfProduct = Mage::getModel($this->_collection)->getCollection()->addStoreFilter($storeId);
+                $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
                 
                 $totalNumProducts = $this->executeQueryScalar(str_replace("SELECT", "SELECT count(*) as count_cu, ", $collectionOfProduct->getSelect()), 'count_cu');
                 
