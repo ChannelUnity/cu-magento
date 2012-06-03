@@ -1,5 +1,12 @@
 <?php
-    
+/**
+ * ChannelUnity connector for Magento Commerce 
+ *
+ * @category   Camiloo
+ * @package    Camiloo_Channelunity
+ * @copyright  Copyright (c) 2012 Camiloo Limited (http://www.camiloo.co.uk)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
     class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abstract
     {
         protected $_collection = 'catalog/product';
@@ -419,15 +426,24 @@
             try {
                 
                 // get the highest product ID
-                $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
+                if (version_compare(Mage::getVersion(), "1.6.0.0", ">=")) {
+                    $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
+                }
+                else {
+                    $collectionOfProduct = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($storeId);
+                }
                 $collectionOfProduct->setOrder('entity_id', 'DESC');
                 $collectionOfProduct->setPageSize(1);
                 $collectionOfProduct->setCurPage(1);
                 $totp = $collectionOfProduct->getFirstItem();
                 $totp = $totp->getEntityId();
                 
-                $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
-                
+                if (version_compare(Mage::getVersion(), "1.6.0.0", ">=")) {
+                    $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
+                }
+                else {
+                    $collectionOfProduct = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($storeId);
+                }
                 $totalNumProducts = $this->executeQueryScalar(str_replace("SELECT", "SELECT count(*) as count_cu, ", $collectionOfProduct->getSelect()), 'count_cu');
                 
                 $collectionOfProduct->addAttributeToFilter("entity_id", array('gteq' => $rangeFrom))

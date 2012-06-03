@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * ChannelUnity connector for Magento Commerce 
+ *
+ * @category   Camiloo
+ * @package    Camiloo_Channelunity
+ * @copyright  Copyright (c) 2012 Camiloo Limited (http://www.camiloo.co.uk)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
 /**
  * ChannelUnity observers.
  * Posts events to the CU cloud when various Magento events occur.

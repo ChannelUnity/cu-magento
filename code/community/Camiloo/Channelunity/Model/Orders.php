@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * ChannelUnity connector for Magento Commerce 
+ *
+ * @category   Camiloo
+ * @package    Camiloo_Channelunity
+ * @copyright  Copyright (c) 2012 Camiloo Limited (http://www.camiloo.co.uk)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
 class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstract
 {
 	
@@ -207,17 +214,46 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     $quote->addItem($item);
                 }
                 else {
-                    echo "<Info>Can't find SKU to add to quote ".(string) $orderitem->SKU.", trying to create stub</Info>";
+                    echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU).", trying to create stub</Info>";
                     
-                    // Create stub if needed
-					$this->createStubProduct((string) $orderitem->SKU, (string) $orderitem->Name, 
-                                             (string) $dataArray->WebsiteId, 
-                                             (string) $order->OrderId, (string) $orderitem->Price, 
-                                             (string) $orderitem->Quantity);
+                    $prodIdToLoad = 0;
                     
-                    // Try once again to add our item to the quote
-                    $product = Mage::getModel('catalog/product')->loadByAttribute('sku', 
+                    try {
+                        // Create stub if needed
+                        $this->createStubProduct((string) $orderitem->SKU, (string) $orderitem->Name, 
+                                                 (string) $dataArray->WebsiteId, 
+                                                 (string) $order->OrderId, (string) $orderitem->Price, 
+                                                 (string) $orderitem->Quantity,
+                                                 (string) $dataArray->SkuAttribute);
+                    }
+                    catch (Exception $e) {
+                        echo "<Info><![CDATA[Stub create error - ".$e->getMessage()."]]></Info>";
+                        
+                        if (strpos($e->getMessage(), "Duplicate entry")) {
+                            
+                            $msgParts = explode("Duplicate entry '", $e->getMessage());
+                            
+                            if (isset($msgParts[1])) {
+                                
+                                $msgParts = $msgParts[1];
+                                $msgParts = explode("-", $msgParts);
+                                $prodIdToLoad = $msgParts[0];
+                            }
+                        }
+                    }
+                    
+                    if ($prodIdToLoad > 0) {
+                    
+                        echo "<Info>Load by ID $prodIdToLoad</Info>";
+                        $product = Mage::getModel('catalog/product')->load($prodIdToLoad);
+                    }
+                    else {
+                        
+                        // Try once again to add our item to the quote
+                        $product = Mage::getModel('catalog/product')->loadByAttribute('sku', 
                                                                                   (string) $orderitem->SKU);
+                        
+                    }
                     
                     if (is_object($product)) {
                         
@@ -229,17 +265,19 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                         $quote->addItem($item);
                     }
                     else {
-                        echo "<Info>Can't find SKU to add to quote ".(string) $orderitem->SKU."</Info>";
+                        echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU)."</Info>";
                     }
                 }
 			}
-            
             
             echo "<Info>Set Billing Address</Info>";
             
             $postcode = $this->fixEncoding((string) $order->ShippingInfo->PostalCode);
             $postcode = str_replace("-", "_", $postcode); // can throw exception if - in postcode
-		
+              
+            $regionModel = Mage::getModel('directory/region')->loadByCode((string) $order->ShippingInfo->State, (string) $order->ShippingInfo->Country);
+            $regionId = is_object($regionModel) ? $regionModel->getId() : ((string) $order->ShippingInfo->State);
+            
 			// set the billing address
 			$billingAddressData = array(
                 'firstname' => $this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)),
@@ -255,7 +293,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
 			'postcode' =>  $postcode,
 			'region' =>  (string) $order->ShippingInfo->State,
-			'region_id' =>  (string) $order->ShippingInfo->State,
+			'region_id' =>  $regionId, 
 			'country_id' =>  (string) $order->ShippingInfo->Country
 			);
             
@@ -275,14 +313,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 				'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
 				'postcode' => $postcode,
 				'region' =>  (string) $order->ShippingInfo->State,
-				'region_id' =>  (string) $order->ShippingInfo->State,
+				'region_id' => $regionId, 
 				'country_id' =>  (string) $order->ShippingInfo->Country,
 				'telephone' =>  (string) $order->ShippingInfo->PhoneNumber
 			);
             
             Mage::getSingleton('core/session')->setShippingPrice(((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
-         //   Mage::getSingleton('core/session')->setShippingMethod((string) $order->ShippingInfo->Service);
-	
+            
 			// add the shipping address to the quote.
 			$shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
             /////////////////////////////////////////////
@@ -331,7 +368,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
               
           } catch (Exception $x) {
-              echo "<Exception><![CDATA[".$x->getMessage()."]]></Exception>";
+              echo "<Exception><![CDATA[".$x->getMessage()." ".$x->getTraceAsString()."]]></Exception>";
               echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
               return;
           }
@@ -440,7 +477,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 		
 	}
     
-    private function createStubProduct($missingSku, $productTitle, $websiteID, $keyorder, $price, $qty) {
+    private function createStubProduct($missingSku, $productTitle, $websiteID, $keyorder, $price, $qty, $skuAttribute) {
         $product = new Mage_Catalog_Model_Product();
         
         $db = Mage::getSingleton("core/resource")->getConnection("core_write");
@@ -459,7 +496,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         $product->setAttributeSetId($attributeSetId);
         $product->setTypeId('simple');
         $product->setName($productTitle);
-        //TODO set the attribute marked as the SKU attribute
+        $product->setData($skuAttribute, $missingSku); // set the attribute marked as the SKU attribute
         
         $product->setWebsiteIDs(array($websiteID)); # derive website ID from store.
         $product->setDescription('Product missing from imported order ID '.$keyorder);
@@ -468,7 +505,6 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         
         // Default Magento attribute
         $product->setWeight('0.01');
-        
         $product->setVisibility(1); // not visible
         $product->setStatus(1);	// status = enabled, other price shows as 0.00 in the order
         $product->setTaxClassId(0); # My default tax class
@@ -552,13 +588,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $singleOrder->OrderStatus);
         
         try {
-            $newOrder->setState($ordStatus, $ordStatus, 'Order updated from ChannelUnity', false);
+            $newOrder->setState($ordStatus /*, $ordStatus, 'Order updated from ChannelUnity', false */);
             
         }
         catch (Exception $x1) {
             
             try {
-                $newOrder->setState('closed', 'closed', 'Order updated from ChannelUnity', false);
+                $newOrder->setState('closed' /*, 'closed', 'Order updated from ChannelUnity', false */);
                 
             }
             catch (Exception $x2) {
@@ -714,8 +750,15 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     $this->reserveStock($dataArray, $order);
                 }
                 else {
-                    // Just create the order (e.g. previously completed)
-                    $this->doCreate($dataArray, $order);
+                    // Let's not create cancelled orders !!! We don't have all the details
+                    if ( "Cancelled" != ((string) $order->OrderStatus) ){
+                        // Just create the order (e.g. previously completed)
+                        $this->doCreate($dataArray, $order);
+                    }
+                    else {
+                        // Have this order marked as imported anyway
+                        echo "<Imported>".((string) $order->OrderId)."</Imported>";
+                    }
                 }
             }
             
