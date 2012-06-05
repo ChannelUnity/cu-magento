@@ -12,7 +12,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 	
 	protected $_collection = 'sales/order';
 
-    
+    /* Test change to check GIT works */
     
     /*
 
