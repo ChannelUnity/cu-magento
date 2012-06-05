@@ -80,11 +80,6 @@
     </adminhtml>   
     <global>
         <models>
-		    <catalog>
-				<rewrite>
-					<product_collection>Camiloo_Price_Model_Mysql4_Product_Collection</product_collection>
-				</rewrite>
-		    </catalog>
             <channelunity>
                 <class>Camiloo_Channelunity_Model</class>
             </channelunity>
