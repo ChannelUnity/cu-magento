@@ -31,8 +31,8 @@ class Camiloo_Channelunity_ApiController extends Mage_Core_Controller_Front_Acti
 <?xml version="1.0" encoding="utf-8" ?><ChannelUnity><Notification><ID>1334834111876</ID><Timestamp>Thu Apr 19 12:15:11 BST 2012</Timestamp><Type>OrderNotification</Type><Payload><MerchantName>marktest</MerchantName><SourceId>10</SourceId><FriendlyName>English</FriendlyName><URL>http://__.camiloo.co.uk/channelunity/api/index</URL><MainCountry>United Kingdom</MainCountry><FrameworkType>Magento</FrameworkType><WebsiteId>1</WebsiteId><StoreId>1</StoreId><StoreviewId>1</StoreviewId><SubscriptionId>304</SubscriptionId><SkuAttribute>sku</SkuAttribute><Orders>
         <Order>
         <ServiceSku>CU_AMZ_UK</ServiceSku>
-        <OrderId>202-8888888-0277161</OrderId>
-        <PurchaseDate>2012-04-10T01:33:10+00:00</PurchaseDate>
+        <OrderId>228-8888888-0277162</OrderId>
+        <PurchaseDate>2012-06-10T01:33:10+00:00</PurchaseDate>
         <Currency>GBP</Currency>
         <OrderFlags></OrderFlags>
         <OrderStatus>Processing</OrderStatus>
@@ -44,9 +44,9 @@ class Camiloo_Channelunity_ApiController extends Mage_Core_Controller_Front_Acti
             <Address2><![CDATA[]]></Address2>
             <Address3><![CDATA[]]></Address3>
             <City><![CDATA[Manchester]]></City>
-            <State>none</State>
+            <State>Greater Manchester</State>
             <PostalCode>M1 1AA</PostalCode>
-            <Country><![CDATA[UK]]></Country>
+            <Country><![CDATA[GB]]></Country>
             <PhoneNumber><![CDATA[01981 239329]]></PhoneNumber>
             <ShippingPrice>2.00</ShippingPrice>
             <ShippingTax>0.00</ShippingTax>

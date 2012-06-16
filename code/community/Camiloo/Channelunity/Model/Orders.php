@@ -120,7 +120,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         
 		
           echo "<Info>Next order: {$order->OrderId} Create Quote</Info>";
-            
+            Mage::register('cu_order_in_progress',1);
           try {
 		
 			$quote = Mage::getModel('sales/quote')->setStoreId((string) $dataArray->StoreviewId);
@@ -474,6 +474,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $newOrder->setCreatedAt((string) $order->PurchaseDate);
             $newOrder->save();
 		
+            Mage::unregister('cu_order_in_progress');
 		
 	}
     
