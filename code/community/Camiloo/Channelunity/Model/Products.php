@@ -197,7 +197,7 @@
             
             $productXml = "<Product>\n";
             $productXml .= "  <RemoteId>".$product->getId()."</RemoteId>\n";
-            $productXml .= "  <ProductType>".$attributeSetName."</ProductType>\n";
+            $productXml .= "  <ProductType><![CDATA[{$attributeSetName} ]]></ProductType>\n";
             $productXml .= "  <Title><![CDATA[{$product->getData('name')} ]]></Title>\n";
             $productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
             $productXml .= "  <SKU><![CDATA[{$product->getData('sku')}]]></SKU>\n";
@@ -454,7 +454,7 @@
                     $this->maxMemory = str_replace("M", "", $this->maxMemory);
                     $this->maxMemory = $this->maxMemory * 1024 * 1024;
                 } else if ($this->maxMemoryChar == "G") {
-                    $this->maxMemory = str_replace("G", "", $maxMemory);
+                    $this->maxMemory = str_replace("G", "", $this->maxMemory);
                     $this->maxMemory = $this->maxMemory * 1024 * 1024 * 1024;
                 }   
                 
