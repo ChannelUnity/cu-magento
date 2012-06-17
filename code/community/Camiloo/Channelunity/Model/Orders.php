@@ -370,14 +370,18 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
           } catch (Exception $x) {
               echo "<Exception><![CDATA[".$x->getMessage()." ".$x->getTraceAsString()."]]></Exception>";
               echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
+			  Mage::unregister('cu_order_in_progress');
               return;
           }
         
             $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $order->OrderStatus);
         
             try {
-                $newOrder->setState($ordStatus, $ordStatus, 'Order imported from ChannelUnity', false);
-                
+                $newOrder->setData('state',$ordStatus);
+         	    $newOrder->setStatus($ordStatus);
+             	$history = $newOrder->addStatusHistoryComment('Order imported from ChannelUnity', false); 
+            	$history->setIsCustomerNotified(false);
+
             }
             catch (Exception $x1) {
                 
@@ -452,6 +456,11 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 $transaction->setAdditionalInformation('AmazonFBA', 'Yes');
                 // Can't set 'complete' state manually - ideally import tracking info and create shipment in Mage
       //          $newOrder->setState('complete', 'complete', 'Order was fulfilled by Amazon', false);
+	  			$newOrder->setData('state', 'complete');
+			    $newOrder->setStatus('complete');
+             	$history = $newOrder->addStatusHistoryComment('Order was fulfilled by Amazon', false); 
+            	$history->setIsCustomerNotified(false);
+
             }
             $transaction->save();
             
@@ -589,7 +598,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $singleOrder->OrderStatus);
         
         try {
-            $newOrder->setState($ordStatus /*, $ordStatus, 'Order updated from ChannelUnity', false */);
+            $newOrder->setData('state',$ordStatus);
             
         }
         catch (Exception $x1) {
