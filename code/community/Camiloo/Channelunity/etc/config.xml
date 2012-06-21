@@ -219,6 +219,15 @@
                     </channelunity>
                 </observers>
             </catalog_controller_category_delete>
+           <core_config_data_save_after>
+               <observers>
+                   <channelunity>
+                       <type>model</type>
+                       <class>channelunity/observer</class>
+                       <method>configSaveAfter</method>
+                   </channelunity>
+               </observers>
+           </core_config_data_save_after>
         </events>
     </global>
     <default>

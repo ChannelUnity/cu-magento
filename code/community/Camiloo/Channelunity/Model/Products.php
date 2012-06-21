@@ -574,7 +574,8 @@
             try {
                 
                 // get the highest product ID
-                if (version_compare(Mage::getVersion(), "1.6.0.0", ">=")) {
+                if (version_compare(Mage::getVersion(), "1.6.0.0", ">=")
+                    && class_exists("Mage_Catalog_Model_Resource_Product_Collection")) {
                     $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
                 }
                 else {
@@ -586,7 +587,8 @@
                 $totp = $collectionOfProduct->getFirstItem();
                 $totp = $totp->getEntityId();
                 
-                if (version_compare(Mage::getVersion(), "1.6.0.0", ">=")) {
+                if (version_compare(Mage::getVersion(), "1.6.0.0", ">=")
+                    && class_exists("Mage_Catalog_Model_Resource_Product_Collection")) {
                     $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
                 }
                 else {

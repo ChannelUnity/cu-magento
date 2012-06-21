@@ -257,8 +257,39 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
         }
     }
     
-    public function categoryDelete(Varien_Event_Observer $observer) {
-        //TODO
+    public function configSaveAfter(Varien_Event_Observer $observer) {
+        try {
+            if (is_object($observer)) {
+                $event = $observer->getEvent();
+                
+                if (is_object($event)) {
+                    
+                    $configData = $event->getData('config_data');
+                    
+                    if (is_object($configData)) {
+                        
+                        $configData = $configData->getData();
+                        
+                        if (isset($configData['fieldset_data'])) {
+                            
+                            $fieldset_data = $configData['fieldset_data'];
+                        
+                            
+                            if (isset($fieldset_data['merchantname'])) {
+                                
+                                $merchantName = $fieldset_data['merchantname'];
+                                
+                                Mage::getModel('channelunity/products')->postMyURLToChannelUnity($merchantName);
+                                
+                            }
+                        
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception $x) {
+        }
     }
 }
 ?>

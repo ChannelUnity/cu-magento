@@ -296,6 +296,31 @@ class Camiloo_Channelunity_Model_Abstract
         return $result; 
     }
 
+    public function postMyURLToChannelUnity($merchantName) {
 
+        $session = curl_init();
+        
+        $baseurl = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+
+        $xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
+            <ChannelUnity>
+            <MerchantName>$merchantName</MerchantName>
+            <RequestType>SuggestEndpointURL</RequestType>
+            <Payload><URL>$baseurl</URL></Payload>
+            </ChannelUnity>";
+
+        $xml = urlencode($xml);
+
+        curl_setopt($session, CURLOPT_URL, "http://my.channelunity.com/event.php");
+        curl_setopt($session, CURLOPT_POST, TRUE);
+        curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($session, CURLOPT_POSTFIELDS, array('message' => $xml));
+
+        $result = curl_exec($session);
+
+        curl_close($session);
+
+        return $result; 
+    }
 }
 ?>
