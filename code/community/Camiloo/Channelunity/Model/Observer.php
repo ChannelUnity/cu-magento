@@ -162,7 +162,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 
                 // Item was ordered on website, stock will have reduced, update to CU
                 $xml = Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct(
-                                                                  $prodTemp->getId(), $storeId);
+                    $prodTemp->getId(), $storeId, $item->getQtyOrdered());
                 
                 $this->postToChannelUnity($xml, "ProductData");
             }

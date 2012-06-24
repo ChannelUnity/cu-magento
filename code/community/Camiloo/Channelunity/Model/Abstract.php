@@ -305,6 +305,7 @@ class Camiloo_Channelunity_Model_Abstract
         $xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>
             <ChannelUnity>
             <MerchantName>$merchantName</MerchantName>
+            <Authorization>" . $this->getValidUserAuth() . "</Authorization>
             <RequestType>SuggestEndpointURL</RequestType>
             <Payload><URL>$baseurl</URL></Payload>
             </ChannelUnity>";

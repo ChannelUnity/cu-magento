@@ -167,7 +167,7 @@
             }
         }
         
-        public function generateCuXmlForSingleProduct($productId, $storeId) {
+        public function generateCuXmlForSingleProduct($productId, $storeId, $reduceStockBy = 0) {
             $productXml = "";
             $bNeedCustomOptionProducts = false; // custom options needed?
             $skuList = array(); // SKUs of the custom option child products
@@ -184,7 +184,7 @@
             }
             
             $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-            $qty = $stock->getData('qty');
+            $qty = $stock->getData('qty') - $reduceStockBy;
             
             $catids = implode(',', $product->getCategoryIds());
             $categories = $product->getCategoryIds();
@@ -467,7 +467,11 @@
                     else {
                         
                         if (!is_object($prodDataValue)) {
+
+                            $prodDataValue = str_replace("<![CDATA[", "", $prodDataValue);
+                            $prodDataValue = str_replace("]]>", "", $prodDataValue);
                             $productXml .= "    <$attr><![CDATA[".$prodDataValue."]]></$attr>\n";
+                            
                         } else if ('Mage_Catalog_Model_Resource_Eav_Mysql4_Product_Type_Configurable_Attribute_Collection' 
                                    == get_class($prodDataValue)) {
                             $productXml .= "    <$attr><![CDATA[Mage_Core_Model_Mysql4_Collection_Abstract]]></$attr>\n";
