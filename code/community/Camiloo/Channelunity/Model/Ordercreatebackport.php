@@ -1,7 +1,7 @@
 <?php
 /**
  * This code is backported from the Magento codebase at v1.4.0.0 to ensure
- * compatability across Magento versions older than v1.4. Its v1.4 classname is
+ * compatibility across Magento versions older than v1.4. Its v1.4 classname is
  * Mage_Sales_Model_Service_Quote. No modifications have been made.
  *
  * @category    Mage

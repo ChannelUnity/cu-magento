@@ -16,7 +16,7 @@
 <h3>ChannelUnity Integration for Magento</h3>
 Devised and Developed in Manchester, UK by <a href="http://www.camiloo.co.uk/?ref=cu" target="_blank">Camiloo Limited</a><br />
 <?php 
-    $xml = Mage::getModel('channelunity/checkforupdates')->getRemoteXMLFileData("http://my.channelunity.com/versioncheck.php?Version=1.0.0.5");
+    $xml = Mage::getModel('channelunity/checkforupdates')->getRemoteXMLFileData("http://my.channelunity.com/versioncheck.php?Version=1.0.0.8");
     $html = $xml->DisplayMessage[0];
     echo $html;
     ?>

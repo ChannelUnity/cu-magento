@@ -8,12 +8,9 @@
  * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
  */
 class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstract
-{
-	
+{	
 	protected $_collection = 'sales/order';
 
-    /* Test change to check GIT works */
-    
     /*
 
      RequestType	OrderStatusUpdate
@@ -114,10 +111,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 	}
 
 	public function doCreate($dataArray, $order) {
-		// this method takes an array of correct structure and creates a valid order creation
-		// request within Magento.
-		
-        
+		// this method takes an array of the normal structure and creates an 
+		// order creation request within Magento.
 		
           echo "<Info>Next order: {$order->OrderId} Create Quote</Info>";
             Mage::register('cu_order_in_progress',1);
@@ -194,15 +189,36 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $currencyObject = Mage::getModel('directory/currency');
             $reverseRate = $currencyObject->getResource()->getRate($storeCurrency, (string) $order->Currency);
             
-              if ($reverseRate == "") {
-                  $reverseRate = 1.0;
-              }
-              
+            if ($reverseRate == "") {
+                $reverseRate = 1.0;
+            }
+
             echo "<ConversionRate>$reverseRate</ConversionRate>";
+            $itemOptions = array();
             
 			// add product(s)
 			foreach ($order->OrderItems->Item as $orderitem) {
-				$product = Mage::getModel('catalog/product')->loadByAttribute((string) $dataArray->SkuAttribute, (string) $orderitem->SKU);
+				$product = Mage::getModel('catalog/product')->loadByAttribute(
+				    (string) $dataArray->SkuAttribute, 
+				    (string) $orderitem->SKU);
+				
+                // First check if this is a custom option
+                if (!is_object($product)) {
+                    $skuparts = explode("-", (string) $orderitem->SKU);
+                    
+                    if (count($skuparts) > 1) {
+                        $parentsku = $skuparts[0];
+                        
+                        $product = Mage::getModel('catalog/product')->loadByAttribute(
+                            (string) $dataArray->SkuAttribute, 
+                            $parentsku);
+                        
+                        for ($i = 1; $i < count($skuparts); $i++) {
+                            $itemOptions[$parentsku][] = $skuparts[$i];
+                        }
+                    }
+                }
+                // ------------------------------------------------------
                 
                 if (is_object($product)) {
                     
@@ -211,10 +227,14 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     $item = Mage::getModel('sales/quote_item');
                     $item->setQuote($quote)->setProduct($product);
                     $item->setData('qty', (string) $orderitem->Quantity);
+                    $item->setCustomPrice((string) $orderitem->Price);
+                    $item->setOriginalCustomPrice((string) $orderitem->Price);
+                    
                     $quote->addItem($item);
                 }
                 else {
-                    echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU).", trying to create stub</Info>";
+                    echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU)
+                        .", trying to create stub</Info>";
                     
                     $prodIdToLoad = 0;
                     
@@ -262,6 +282,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                         $item = Mage::getModel('sales/quote_item');
                         $item->setQuote($quote)->setProduct($product);
                         $item->setData('qty', (string) $orderitem->Quantity);
+                        $item->setCustomPrice((string) $orderitem->Price);
+                        $item->setOriginalCustomPrice((string) $orderitem->Price);
                         $quote->addItem($item);
                     }
                     else {
@@ -299,9 +321,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             
 	 		// add the billing address to the quote.
 			$billingAddress = $quote->getBillingAddress()->addData($billingAddressData);
-              
-              
-              echo "<Info>Set Shipping Address</Info>";
+            
+			echo "<Info>Set Shipping Address</Info>";
 			
 			// set the shipping address
 			$shippingAddressData = array(
@@ -377,23 +398,25 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $order->OrderStatus);
         
             try {
-                $newOrder->setData('state',$ordStatus);
+                $newOrder->setData('state', $ordStatus);
          	    $newOrder->setStatus($ordStatus);
-             	$history = $newOrder->addStatusHistoryComment('Order imported from ChannelUnity', false); 
+             	$history = $newOrder->addStatusHistoryComment(
+             	    'Order imported from ChannelUnity', false); 
             	$history->setIsCustomerNotified(false);
 
             }
             catch (Exception $x1) {
                 
                 try {
-                    $newOrder->setState('closed', 'closed', 'Order imported from ChannelUnity', false);
-                    
+                    $newOrder->setState('closed', 'closed', 
+                        'Order imported from ChannelUnity', false);
                 }
                 catch (Exception $x2) {
                 }
             }
             
-            // This order will have been paid for, otherwise it won't have imported
+            // This order will have been paid for, otherwise it won't 
+            // have imported
             
             $invoiceId = Mage::getModel('sales/order_invoice_api')
                 ->create($newOrder->getIncrementId(), array());
@@ -416,9 +439,12 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $transaction->setOrder($newOrder);
             $transaction->setTxnType('capture');
             $transaction->setTxnId((string) $order->OrderId);
-            $transaction->setAdditionalInformation('SubscriptionId', (string) $dataArray->SubscriptionId);
-            $transaction->setAdditionalInformation('RemoteOrderID', (string) $order->OrderId);
-            $transaction->setAdditionalInformation('ShippingService', (string) $order->ShippingInfo->Service);
+            $transaction->setAdditionalInformation('SubscriptionId', 
+                (string) $dataArray->SubscriptionId);
+            $transaction->setAdditionalInformation('RemoteOrderID', 
+                (string) $order->OrderId);
+            $transaction->setAdditionalInformation('ShippingService', 
+                (string) $order->ShippingInfo->Service);
             
             $serviceType = (string) $order->ServiceSku;
             switch ($serviceType) {
@@ -455,7 +481,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 
                 $transaction->setAdditionalInformation('AmazonFBA', 'Yes');
                 // Can't set 'complete' state manually - ideally import tracking info and create shipment in Mage
-      //          $newOrder->setState('complete', 'complete', 'Order was fulfilled by Amazon', false);
+      
+                
 	  			$newOrder->setData('state', 'complete');
 			    $newOrder->setStatus('complete');
              	$history = $newOrder->addStatusHistoryComment('Order was fulfilled by Amazon', false); 
@@ -469,9 +496,6 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 
 				$message = Mage::getModel('giftmessage/message');
                 
-              	// $gift_sender = $message->getData('sender');
-                // $gift_recipient = $message->getData('recipient');
-                
                 $message->setMessage($order->ShippingInfo->GiftMessage);
 				$message->save();
                 
@@ -481,10 +505,58 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			}
             
             $newOrder->setCreatedAt((string) $order->PurchaseDate);
+            
+            //================ Add custom options where applicable ============
+            $allItems = $newOrder->getAllItems();
+            foreach ($allItems as $item) {
+                if (isset($itemOptions[$item->getSku()])) {
+                    $optionsToAdd = $itemOptions[$item->getSku()];
+                    
+                    $optionArray = array();
+                    
+                    foreach ($optionsToAdd as $customSkuToAdd) {
+                        $productTemp = Mage::getModel('catalog/product')->load($item->getProductId());
+                        
+                        $tempOption = $productTemp->getOptions();
+                        foreach ($tempOption as $option) {                
+                            $temp = $option->getData();
+                            
+                            $values = $option->getValues();
+                            if (count($values) > 0) {                    
+                                foreach ($values as $value) {
+                                    
+                                    if ($value["sku"] == $customSkuToAdd) {
+                                        
+                                        echo "<Info>Add custom option: $customSkuToAdd</Info>";
+                                        
+                                        $optionArray[count($optionArray)]
+                                            = array(
+                                                'label' => $temp["default_title"],
+                                              'value' => $value["title"],
+                                              'print_value' => $value["title"],
+                                              'option_type' => 'radio',
+                                              'custom_view' => false,
+                                                'option_id' => $temp["option_id"],
+                                                'option_value' => $value->getId()
+                                                );
+                                    }
+                                    
+                                }
+                            }
+                        }
+                        
+                        
+                    }
+                    
+                    $item->setProductOptions(array('options' => $optionArray
+                                        ));
+
+                    $item->save();
+                }
+            }
             $newOrder->save();
 		
             Mage::unregister('cu_order_in_progress');
-		
 	}
     
     private function createStubProduct($missingSku, $productTitle, $websiteID, $keyorder, $price, $qty, $skuAttribute) {
@@ -516,7 +588,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         // Default Magento attribute
         $product->setWeight('0.01');
         $product->setVisibility(1); // not visible
-        $product->setStatus(1);	// status = enabled, other price shows as 0.00 in the order
+        $product->setStatus(1);	// status = enabled, otherwise price shows as 0.00 in the order
         $product->setTaxClassId(0); # My default tax class
         $product->setStockData(array(
                                      'is_in_stock' => 1,
