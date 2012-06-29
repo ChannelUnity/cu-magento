@@ -316,7 +316,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			'postcode' =>  $postcode,
 			'region' =>  (string) $order->ShippingInfo->State,
 			'region_id' =>  $regionId, 
-			'country_id' =>  (string) $order->ShippingInfo->Country
+			'country_id' =>  (string) $order->ShippingInfo->Country,
+			'should_ignore_validation' => true
 			);
             
 	 		// add the billing address to the quote.
@@ -336,7 +337,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 				'region' =>  (string) $order->ShippingInfo->State,
 				'region_id' => $regionId, 
 				'country_id' =>  (string) $order->ShippingInfo->Country,
-				'telephone' =>  (string) $order->ShippingInfo->PhoneNumber
+				'telephone' =>  (string) $order->ShippingInfo->PhoneNumber,
+				'should_ignore_validation' => true
 			);
             
             Mage::getSingleton('core/session')->setShippingPrice(((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
@@ -376,9 +378,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 				$service = Mage::getModel('channelunity/ordercreatebackport', $quote);
 			}
 			
+			$currentstore = Mage::app()->getStore()->getId();
+			// upgrade to admin permissions to avoid item qty not available issue
+			Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
 			$service->submitAll();
 			$newOrder = $service->getOrder(); // returns full order object.
-            
+			// we're done; sign out of admin permission
+			Mage::app()->setCurrentStore($currentstore);            
               
             if (!is_object($newOrder)) {
                 echo "<NotImported>".((string) $order->OrderId)."</NotImported>";
