@@ -10,53 +10,6 @@
 class Camiloo_Channelunity_Model_Abstract
 {
 	
-		/*	From-To range examples.
-			dataRange [xml element array]
-			<request>
-			<requestbody>
-			<range>
-				<filter on="date">
-						<operator type="from">
-							<value>2001-10-20</value>
-						</operator>
-						<operator type="to">
-							<value>2001-10-22</value>
-						</operator>
-				</filter>
-				<filter on="date">
-						<operator type="from">
-							<value>2001-10-20</value>
-						</operator>
-						<operator type="to">
-							<value>2001-10-22</value>
-						</operator>
-				</filter>
-			</range>
-			</request>
-		*/
-		/*  Simple operator filter example
-			dataRange [xml element array]
-				<filter on="product_id">
-						<operator type="gte">27</operator>
-				</filter>
-		*/
-		/*  Range filter example
-			
-			dataRange [xml element array]
-				<filter on="product_id">
-						<operator type="in">
-							<value>22</value>
-							<value>23</value>
-							<value>24</value>
-							<value>25</value>
-							<value>26</value>
-							<value>27</value>
-							<value>28</value>
-							<value>29</value>
-							<value>30</value>
-						</operator>
-				</filter>
-		*/
 	public function filterCollection($collection, $dataRange){
 		
 		foreach($dataRange as $filter){
@@ -146,6 +99,18 @@ class Camiloo_Channelunity_Model_Abstract
         die;
     }
 
+    public function getEndpoint() {
+        if (strpos($_SERVER['SERVER_NAME'], "camiloo.co.uk") !== false) {
+        
+            return "http://staging.channelunity.com/event.php";
+        }
+        else {
+            
+            return "http://my.channelunity.com/event.php";
+        }
+    }
+
+
     /**
     * Calls the VerifyNotification API.
     */
@@ -162,7 +127,7 @@ class Camiloo_Channelunity_Model_Abstract
             <Payload>$messageverify</Payload>
             </ChannelUnity>");
 
-        curl_setopt($session, CURLOPT_URL, "http://my.channelunity.com/event.php");
+        curl_setopt($session, CURLOPT_URL, $this->getEndpoint());
         curl_setopt($session, CURLOPT_POST, TRUE);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($session, CURLOPT_POSTFIELDS, array('message' => $xml));
@@ -246,7 +211,7 @@ class Camiloo_Channelunity_Model_Abstract
     
             $xml = urlencode($xml);
     
-            curl_setopt($session, CURLOPT_URL, "http://my.channelunity.com/event.php");
+            curl_setopt($session, CURLOPT_URL, $this->getEndpoint());
             curl_setopt($session, CURLOPT_POST, TRUE);
             curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
             curl_setopt($session, CURLOPT_POSTFIELDS, array('message' => $xml));
@@ -284,7 +249,7 @@ class Camiloo_Channelunity_Model_Abstract
 
         $xml = urlencode($xml);
 
-        curl_setopt($session, CURLOPT_URL, "http://my.channelunity.com/event.php");
+        curl_setopt($session, CURLOPT_URL, $this->getEndpoint());
         curl_setopt($session, CURLOPT_POST, TRUE);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($session, CURLOPT_POSTFIELDS, array('message' => $xml));
@@ -312,7 +277,7 @@ class Camiloo_Channelunity_Model_Abstract
 
         $xml = urlencode($xml);
 
-        curl_setopt($session, CURLOPT_URL, "http://my.channelunity.com/event.php");
+        curl_setopt($session, CURLOPT_URL, $this->getEndpoint());
         curl_setopt($session, CURLOPT_POST, TRUE);
         curl_setopt($session, CURLOPT_RETURNTRANSFER, TRUE);
         curl_setopt($session, CURLOPT_POSTFIELDS, array('message' => $xml));
