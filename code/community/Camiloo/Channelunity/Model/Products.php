@@ -355,7 +355,7 @@
                 
                 foreach ($skuList as $customSku) {
                     
-                    $skuParts = explode("-", $customSku);
+                    $skuParts = explode("-", str_replace($product->getData('sku'), "temp", $customSku));
                     
                     $productXml .= "<Product>\n";
                     $productXml .= "  <RemoteId>".(($idIncrement++) + $product->getId())."</RemoteId>\n";
