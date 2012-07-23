@@ -231,6 +231,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     $item->setOriginalCustomPrice((string) $orderitem->Price);
                     
                     $quote->addItem($item);
+                    
+                    $quote->save();
+                    $item->save();
                 }
                 else {
                     echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU)
@@ -285,6 +288,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                         $item->setCustomPrice((string) $orderitem->Price);
                         $item->setOriginalCustomPrice((string) $orderitem->Price);
                         $quote->addItem($item);
+                        
+                        $quote->save();
+                        $item->save();
                     }
                     else {
                         echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU)."</Info>";
@@ -676,8 +682,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $singleOrder->OrderStatus);
         
         try {
-            $newOrder->setData('state',$ordStatus);
-            
+            $newOrder->setData('state', $ordStatus);
+            $newOrder->setData('status', $ordStatus);
         }
         catch (Exception $x1) {
             

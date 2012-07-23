@@ -202,7 +202,7 @@
             $productXml = "<Product>\n";
             $productXml .= "  <RemoteId>".$product->getId()."</RemoteId>\n";
             $productXml .= "  <ProductType><![CDATA[".$attributeSetName." ]]></ProductType>\n";
-            $productXml .= "  <Title><![CDATA[{$product->getData('name')} ]]></Title>\n";
+            $productXml .= "  <Title><![CDATA[{$product->getName()} ]]></Title>\n";
             $productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
             $productXml .= "  <SKU><![CDATA[{$product->getData('sku')}]]></SKU>\n";
             $productXml .= "  <Price>{$product->getData('price')}</Price>\n";
