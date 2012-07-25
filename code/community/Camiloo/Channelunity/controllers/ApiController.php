@@ -193,15 +193,21 @@ EOD;
     public function cleanamazonordersAction()
     {
         // Get real table name for sql
-        $tableName = Mage::getSingleton('core/resource')
-                ->getTableName('sales_flat_order_payments');
+        $orderTable = Mage::getSingleton('core/resource')
+                ->getTableName('sales_flat_order_payment');
+        $quoteTable = Mage::getSingleton('core/resource')
+                ->getTableName('sales_flat_quote_payment');
         // Get db connection
         $db = Mage::getSingleton('core/resource')->getConnection('core_write');
         
         // Run sql
-        $result = $db->query('UPDATE ' . $tableName . ' SET method = "channelunitypayment" WHERE method IN ("amzpaymentmethodcom", "amzpaymentmethodde", "amzpaymentmethodfr", "amzpaymentmethoduk")');
+        $sqlEnd  = ' SET method = "channelunitypayment" WHERE method IN ("amzpaymentmethodcom", "amzpaymentmethodde", "amzpaymentmethodfr", "amzpaymentmethoduk")';
+        $result1 = $db->query('UPDATE ' . $orderTable . $sqlEnd);
+        $result2 = $db->query('UPDATE ' . $quoteTable . $sqlEnd);
         
-        var_dump($result);
+        var_dump($result1);
+        var_dump($result2);
+        
     }
 
 }
