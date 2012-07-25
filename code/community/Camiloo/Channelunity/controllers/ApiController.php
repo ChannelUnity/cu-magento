@@ -199,7 +199,7 @@ EOD;
         $db = Mage::getSingleton('core/resource')->getConnection('core_write');
         
         // Run sql
-        $result = $db->query('UPDATE ' . $tableName . ' SET paymentmethod = "channelunitypayment" WHERE method IN ("amzpaymentmethodcom", "amzpaymentmethodde", "amzpaymentmethodfr", "amzpaymentmethoduk")');
+        $result = $db->query('UPDATE ' . $tableName . ' SET method = "channelunitypayment" WHERE method IN ("amzpaymentmethodcom", "amzpaymentmethodde", "amzpaymentmethodfr", "amzpaymentmethoduk")');
         
         var_dump($result);
     }
