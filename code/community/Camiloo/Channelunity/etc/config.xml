@@ -129,7 +129,7 @@
                     </channelunity>
                 </observers>			
 			</catalog_product_save_after>
-			<catalog_controller_product_delete>
+			<catalog_product_delete_before>
                 <observers>
                     <channelunity>
                         <type>model</type>
@@ -137,7 +137,7 @@
                         <method>productWasDeleted</method>
                     </channelunity>
                 </observers>
-			</catalog_controller_product_delete>
+			</catalog_product_delete_before>
 			<controller_action_postdispatch>
                     <observers>
 

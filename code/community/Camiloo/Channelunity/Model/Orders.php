@@ -231,6 +231,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     $item->setOriginalCustomPrice((string) $orderitem->Price);
                     
                     $quote->addItem($item);
+                    
+                    $quote->save();
+                    $item->save();
                 }
                 else {
                     echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU)
@@ -285,6 +288,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                         $item->setCustomPrice((string) $orderitem->Price);
                         $item->setOriginalCustomPrice((string) $orderitem->Price);
                         $quote->addItem($item);
+                        
+                        $quote->save();
+                        $item->save();
                     }
                     else {
                         echo "<Info>Can't find SKU to add to quote ".((string) $orderitem->SKU)."</Info>";
@@ -648,90 +654,25 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
     }
     
     private function doSingleOrder($singleOrder, $newOrder) {
-     /*   // 1. Update shipping address
-        
-        $postcode = $this->fixEncoding((string) $singleOrder->ShippingInfo->PostalCode);
-        $postcode = str_replace("-", "_", $postcode); // can throw exception if - in postcode
-        
-        $shippingId = $newOrder->getShippingAddress()->getId();
-        $shipAddress = Mage::getModel('sales/order_address')->load($shippingId);
-        $shipAddress->setFirstname($this->fixEncoding(
-                                                      $this->getFirstName((string) $singleOrder->ShippingInfo->RecipientName)));
-        $shipAddress->setLastname($this->fixEncoding($this->getLastName((string) $singleOrder->ShippingInfo->RecipientName)));
-        $shipAddress->setStreet((string) $this->fixEncoding(
-                                                            (string) $singleOrder->ShippingInfo->Address1
-                                                            ."\n".(string) $singleOrder->ShippingInfo->Address2
-                                                            ."\n".(string) $singleOrder->ShippingInfo->Address3));
-        $shipAddress->setCity($this->fixEncoding((string) $singleOrder->ShippingInfo->City));
-        $shipAddress->setPostcode($postcode);
-        $shipAddress->setRegion((string) $singleOrder->ShippingInfo->State);
-        $shipAddress->setRegionId((string) $singleOrder->ShippingInfo->State);
-        $shipAddress->setCountryId((string) $singleOrder->ShippingInfo->Country);
-        $shipAddress->setTelephone((string) $singleOrder->ShippingInfo->PhoneNumber);
-        $shipAddress->save();
-        
-        // 2. Update billing address
-        */
+     
         // 3. Update order status
         $ordStatus = $this->CUOrderStatusToMagentoStatus((string) $singleOrder->OrderStatus);
         
         try {
-            $newOrder->setData('state',$ordStatus);
-            
+            $newOrder->setData('state', $ordStatus);
+            $newOrder->setData('status', $ordStatus);
         }
         catch (Exception $x1) {
             
             try {
-                $newOrder->setState('closed' /*, 'closed', 'Order updated from ChannelUnity', false */);
                 
+                $newOrder->setData('state', 'closed');
+                $newOrder->setData('status', 'closed');
             }
             catch (Exception $x2) {
             }
         }
-     /*   
-        // 4. Update item prices and currency
         
-        echo "<InfoUpdate>Order currency {$singleOrder->Currency}</InfoUpdate>";
-        $newOrder->getStore()->setCurrentCurrencyCode((string) $singleOrder->Currency);
-        $storeCurrency = $newOrder->getStore()->getBaseCurrencyCode();
-        echo "<InfoUpdate>Store currency $storeCurrency</InfoUpdate>";
-        
-        $currencyObject = Mage::getModel('directory/currency');
-        $reverseRate = $currencyObject->getResource()->getRate($storeCurrency, (string) $singleOrder->Currency);
-        
-        if ($reverseRate == "") {
-            $reverseRate = 1.0;
-        }
-        
-        echo "<ConversionRate>$reverseRate</ConversionRate>";
-        
-        
-        
-        
-        $itemColl = $newOrder->getItemsCollection();
-        foreach ($itemColl as $orderItem) {
-            
-            foreach ($singleOrder->OrderItems->Item as $orderitem1) {
-                
-                if (((string) $orderitem1->SKU) == $orderItem->getSku()) {
-                
-                    // -- check what SKU is mapped to
-                    
-                    $priceTemp = ((string) $orderitem1->Price) / $reverseRate;
-                    $qtyTemp = (string) $orderitem1->Quantity;
-                    
-                    $orderItem->setPrice($priceTemp);
-                    $orderItem->setQtyOrdered($qtyTemp);
-                    $orderItem->setOriginalPrice($priceTemp);
-                    $orderItem->setRowTotal($priceTemp * $qtyTemp);
-                    $orderItem->setSubTotal($priceTemp * $qtyTemp);
-                    
-                    break;
-                }
-                
-            }
-        }
-        */
         $newOrder->save();
     }
     
