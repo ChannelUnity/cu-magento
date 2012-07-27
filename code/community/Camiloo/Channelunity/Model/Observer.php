@@ -207,7 +207,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
      * Send shipment to CU when tracking information is added.
      */
     public function saveTrackingToAmazon(Varien_Event_Observer $observer)
-	{
+    {
         try {
             // Only mark as shipped when order has tracking information.
             $track = $observer->getEvent()->getTrack();
@@ -223,11 +223,13 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                                                                                     $carrierName,
                                                                                     $track->getTitle(),
                                                                                     $track->getNumber());
-            $this->postToChannelUnity($xml, "OrderStatusUpdate");
+            $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
+            Mage::log('saveTrackingToAmazon: ' . $result);
         }
         catch (Exception $x) {
+            Mage::logException($x);
         }
-	}
+    }
 
     public function shipAmazon(Varien_Event_Observer $observer)
     {
@@ -239,9 +241,11 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                                                                                     "",
                                                                                     "",
                                                                                     "");
-            $this->postToChannelUnity($xml, "OrderStatusUpdate");
+            $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
+            Mage::log('shipAmazon: ' . $result);
         }
         catch (Exception $x) {
+            Mage::logException($x);
         }
     }
     
