@@ -462,6 +462,10 @@
                     if (is_array($prodDataValue)) {
                         
                         $prodDataValue = $product->getData($attr);
+                        
+                        $prodDataValue = str_replace("<![CDATA[", "", $prodDataValue);
+                        $prodDataValue = str_replace("]]>", "", $prodDataValue);
+                        
                         $productXml .= "    <$attr><![CDATA[$prodDataValue]]></$attr>\n";
                     }
                     else {
@@ -482,6 +486,13 @@
             return $productXml;
         }
         
+        public function generateCuXmlSku($args) {
+            $row = $args['row'];
+            $productId = $row["sku"];
+            
+            echo "<SKU><![CDATA[ ".$productId." ]]></SKU>";
+        }
+    
         public function generateCuXmlForProductEcho($args) {
             echo $this->generateCuXmlForProduct($args);
         }
@@ -556,6 +567,18 @@
             // set an attribute for the product
             $product->setData($fieldName, $fieldValue);
             $product->save();
+        }
+        
+        public function getAllSKUs($request) {
+            $collectionOfProduct = Mage::getModel('catalog/product')->getCollection();
+            
+            $sql = $collectionOfProduct->getSelect();
+            
+            Mage::getSingleton('core/resource_iterator')->walk(
+                $sql, 
+                array(array($this, 'generateCuXmlSku')), 
+                array('storeId' => 0),
+                $collectionOfProduct->getSelect()->getAdapter());
         }
         
         /**

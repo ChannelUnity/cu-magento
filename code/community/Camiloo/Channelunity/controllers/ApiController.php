@@ -145,6 +145,10 @@ EOD;
                 Mage::getModel('channelunity/products')->doSetValue($request);
                 break;
                 
+            case "GetAllSKUs":
+                Mage::getModel('channelunity/products')->getAllSKUs($request);
+                break;
+                
             case "ProductData":
                 error_reporting(E_ALL);
                 ini_set("display_errors", "On");
