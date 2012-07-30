@@ -301,7 +301,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             echo "<Info>Set Billing Address</Info>";
             
             $postcode = $this->fixEncoding((string) $order->ShippingInfo->PostalCode);
-            $postcode = str_replace("-", "_", $postcode); // can throw exception if - in postcode
+       //     $postcode = str_replace("-", "_", $postcode); // can throw exception if - in postcode
               
             $regionModel = Mage::getModel('directory/region')->loadByCode((string) $order->ShippingInfo->State, (string) $order->ShippingInfo->Country);
             $regionId = is_object($regionModel) ? $regionModel->getId() : ((string) $order->ShippingInfo->State);
@@ -441,6 +441,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
              * i.e. the invoice state is now changed to 'Paid'
              */
             $invoice->capture()->save();
+            Mage::dispatchEvent('sales_order_invoice_pay', array('invoice' => $invoice));
             
             $newOrder->setTotalPaid($newOrder->getGrandTotal());
             $newOrder->setBaseTotalPaid($newOrder->getBaseGrandTotal());
