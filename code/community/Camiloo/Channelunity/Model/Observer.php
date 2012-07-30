@@ -292,6 +292,12 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
         }
     }
     
+    /**
+     * Triggers on a store delete event. Removes store and category data in CU.
+     * @author Matthew Gribben
+     * 
+     * @param Varien_Event_Observer $observer
+     */
 	public function storeDelete(Varien_Event_Observer $observer) {
 	    	
 	    	$event = $observer->getEvent();
