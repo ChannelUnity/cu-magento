@@ -287,5 +287,49 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
         }
     }
-
+    
+    /**
+     * Triggers on a store delete event. Removes store and category data in CU.
+     * @author Matthew Gribben
+     * 
+     * @param Varien_Event_Observer $observer
+     */
+	public function storeDelete(Varien_Event_Observer $observer) {
+	    	
+	    	$event = $observer->getEvent();
+	    	$store = $event->getStore();
+	
+		try{
+			
+			
+			$xml = "<StoreDelete>\n";
+			$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+			."</SourceURL>\n";
+			
+			$storeViewId = $store->getId();
+			$storeId = $store->getGroupId();
+			$websiteId = $store->getWebsiteId();
+			
+			$xml .= "<StoreId>".$storeId."</StoreId>\n";
+			$xml .= "<DeletedStoreViewId>".$storeViewId."</DeletedStoreViewId>\n";
+			$xml .= "<WebsiteId>".$websiteId."</WebsiteId>\n";
+			
+			$xml .="</StoreDelete>\n";
+			
+			
+			
+			$result = $this->postToChannelUnity($xml, "storeDelete");
+			 
+			var_dump($result);
+			exit;
+	        
+	        }
+	        catch (Exception $e) {
+	        	
+	        	var_dump($e->getTrace());
+	        }    	
+	    	
+	    }
+    
 }
+?>
