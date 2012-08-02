@@ -134,7 +134,38 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 $xml .= "</Products>\n";
 
                 $this->postToChannelUnity($xml, "ProductData");
-            }
+            } else if ($evname == 'adminhtml_catalog_product_massStatus') { //update all products status on the massive status update
+				
+				$updatedProductsId = $observer->getEvent()->getControllerAction()->getRequest()->getParam('product');
+				
+				if(is_array($updatedProductsId) && !empty($updatedProductsId))
+				{
+					$storeViewId = Mage::helper('adminhtml/catalog_product_edit_action_attribute')->getSelectedStoreId();
+					
+					$xml = "<Products>\n";
+					$xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)."</SourceURL>\n";
+					$xml .= "<StoreViewId>{$storeViewId}</StoreViewId>\n";
+               
+					foreach ($updatedProductsId as $productId)
+					{
+						$product = Mage::getModel('catalog/product')->load($productId);
+						
+						$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
+						
+						if($skipProduct)
+						{
+							$xml .= "<DeletedProductId>" . $productId . "</DeletedProductId>\n";
+						} else {
+							$xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($productId, $storeViewId);
+						}
+					}
+					
+					$xml .= "</Products>\n";
+					
+					$this->postToChannelUnity($xml, "ProductData");
+				}
+				
+			}
         } catch (Exception $e) {
             Mage::logException($e);
         }
