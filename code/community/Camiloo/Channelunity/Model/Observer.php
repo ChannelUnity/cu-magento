@@ -37,8 +37,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $xml .= "</Products>\n";
 
             $this->postToChannelUnity($xml, "ProductData");
-        } catch (Exception $x) {
-
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -62,8 +62,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $xml .= "</Products>\n";
 
             $this->postToChannelUnity($xml, "ProductData");
-        } catch (Exception $x) {
-
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -116,8 +116,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
                 $this->postToChannelUnity($xml, "ProductData");
             }
-        } catch (Exception $x) {
-
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -143,8 +143,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                     }
                 }
             }
-        } catch (Exception $x) {
-
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -167,8 +167,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
                 $this->postToChannelUnity($xml, "ProductData");
             }
-        } catch (Exception $x) {
-
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -183,8 +183,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                     $this->getItemsForUpdateCommon($items, $order->getStore()->getId());
                 }
             }
-        } catch (Exception $x) {
-
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -198,8 +198,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
             $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderStatus($order);
             $this->postToChannelUnity($xml, "OrderStatusUpdate");
-        } catch (Exception $x) {
-
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -222,8 +222,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, $carrierName, $track->getTitle(), $track->getNumber());
             $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
             Mage::log('saveTrackingToAmazon: ' . $result);
-        } catch (Exception $x) {
-            Mage::logException($x);
+        } catch (Exception $e) {
+            Mage::logException($e);
         }
     }
 
@@ -236,8 +236,9 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, "", "", "");
             $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
             Mage::log('shipAmazon: ' . $result);
-        } catch (Exception $x) {
-            Mage::logException($x);
+        } catch (Exception $e) {
+
+            Mage::logException($e);
         }
     }
 
@@ -249,7 +250,9 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
         try {
             $myStoreURL = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
             $categoryStatus = Mage::getModel('channelunity/categories')->postCategoriesToCU($myStoreURL);
-        } catch (Exception $x) {
+        } catch (Exception $e) {
+
+            Mage::logException($e);
 
         }
     }
@@ -283,53 +286,50 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                     }
                 }
             }
-        } catch (Exception $x) {
+        } catch (Exception $e) {
+
+            Mage::logException($e);
 
         }
     }
-    
+
     /**
      * Triggers on a store delete event. Removes store and category data in CU.
      * @author Matthew Gribben
-     * 
+     *
      * @param Varien_Event_Observer $observer
      */
-	public function storeDelete(Varien_Event_Observer $observer) {
-	    	
-	    	$event = $observer->getEvent();
-	    	$store = $event->getStore();
-	
-		try{
-			
-			
-			$xml = "<StoreDelete>\n";
-			$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
-			."</SourceURL>\n";
-			
-			$storeViewId = $store->getId();
-			$storeId = $store->getGroupId();
-			$websiteId = $store->getWebsiteId();
-			
-			$xml .= "<StoreId>".$storeId."</StoreId>\n";
-			$xml .= "<DeletedStoreViewId>".$storeViewId."</DeletedStoreViewId>\n";
-			$xml .= "<WebsiteId>".$websiteId."</WebsiteId>\n";
-			
-			$xml .="</StoreDelete>\n";
-			
-			
-			
-			$result = $this->postToChannelUnity($xml, "storeDelete");
-			 
-			var_dump($result);
-			exit;
-	        
-	        }
-	        catch (Exception $e) {
-	        	
-	        	var_dump($e->getTrace());
-	        }    	
-	    	
-	    }
-    
+    public function storeDelete(Varien_Event_Observer $observer)
+    {
+
+        $event = $observer->getEvent();
+        $store = $event->getStore();
+
+        try {
+
+
+            $xml = "<StoreDelete>\n";
+            $xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+                    . "</SourceURL>\n";
+
+            $storeViewId = $store->getId();
+            $storeId = $store->getGroupId();
+            $websiteId = $store->getWebsiteId();
+
+            $xml .= "<StoreId>" . $storeId . "</StoreId>\n";
+            $xml .= "<DeletedStoreViewId>" . $storeViewId . "</DeletedStoreViewId>\n";
+            $xml .= "<WebsiteId>" . $websiteId . "</WebsiteId>\n";
+
+            $xml .="</StoreDelete>\n";
+
+
+
+            $result = $this->postToChannelUnity($xml, "storeDelete");
+
+        } catch (Exception $e) {
+
+            Mage::logException($e);
+        }
+    }
+
 }
-?>
