@@ -137,6 +137,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             } else if ($evname == 'adminhtml_catalog_product_massStatus') { //update all products status on the massive status update
 				
 				$updatedProductsId = $observer->getEvent()->getControllerAction()->getRequest()->getParam('product');
+				$status = $observer->getEvent()->getControllerAction()->getRequest()->getParam('status');
 				
 				if(is_array($updatedProductsId) && !empty($updatedProductsId))
 				{
