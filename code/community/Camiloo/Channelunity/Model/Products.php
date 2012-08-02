@@ -570,6 +570,12 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
     public function getAllSKUs($request)
     {
         $collectionOfProduct = Mage::getModel('catalog/product')->getCollection();
+		
+		$ignoreDisabled = Mage::getStoreConfig('channelunityint/generalsettings/ignoredisabledproducts');
+		
+		if($ignoreDisabled == 1) {
+			$collectionOfProduct->addFieldToFilter('status', 1);
+		}
 
         $sql = $collectionOfProduct->getSelect();
 
