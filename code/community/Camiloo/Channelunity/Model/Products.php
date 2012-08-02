@@ -176,243 +176,248 @@
             
             $product = Mage::getModel('catalog/product');
             $product->setStoreId($storeId)->load($productId);
+			
+			$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
             
-            try {
-                $imageUrl = $product->getImageUrl();
-            } catch (Exception $e) {
-                $imageUrl = '';
-            }
-            
-            $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-            $qty = $stock->getData('qty') - $reduceStockBy;
-            
-            $catids = implode(',', $product->getCategoryIds());
-            $categories = $product->getCategoryIds();
-            $catnames = "";
-            
-            foreach ($categories as $k => $_category_id) {
-                $_category = Mage::getModel('catalog/category')->load($_category_id);
-                $catnames .= ($_category->getName()) . ", ";
-            }
-            
-            $attributeSetModel = Mage::getModel("eav/entity_attribute_set");
-            $attributeSetModel->load($product->getData('attribute_set_id'));
-            $attributeSetName = $attributeSetModel->getAttributeSetName();
-            
-            $productXml = "<Product>\n";
-            $productXml .= "  <RemoteId>".$product->getId()."</RemoteId>\n";
-            $productXml .= "  <ProductType><![CDATA[".$attributeSetName." ]]></ProductType>\n";
-            $productXml .= "  <Title><![CDATA[{$product->getName()} ]]></Title>\n";
-            $productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
-            $productXml .= "  <SKU><![CDATA[{$product->getData('sku')}]]></SKU>\n";
-            $productXml .= "  <Price>{$product->getData('price')}</Price>\n";
-            $productXml .= "  <Quantity>{$qty}</Quantity>\n";
-            $productXml .= "  <Category>{$catids}</Category>\n";
-            $productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
-            $productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
-            
-            // Add associated/child product references if applicable
-            $productXml .= "  <RelatedSKUs>\n";
-            
-            $variationXml = "  <Variations>\n";
-            
-            if ($product->getData("type_id") == 'configurable') {
-                
-                $childProducts = Mage::getModel('catalog/product_type_configurable')
-                ->getUsedProducts(null, $product);
-                
-                foreach ($childProducts as $cp) {
-                    
-                    $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
-                }
-                
-                $confAttributes = $product->getTypeInstance(true)->getConfigurableAttributesAsArray($product);
-                
-                // Get the attribute(s) which vary
-                if (is_array($confAttributes)) {
-                    foreach ($confAttributes as $cattr) {
-                        $cattr = serialize($cattr);
-                        
-                        $findTemp = "\"attribute_code\";";
-                        
-                        $cattr = explode($findTemp, $cattr);
-                        
-                        if (isset($cattr[1])) {
-                            
-                            $cattr = explode("\"", $cattr[1]);
-                            
-                            if (isset($cattr[1])) {
-                                
-                                $variationXml .= "<Variation><![CDATA[{$cattr[1]}]]></Variation>\n";
-                                
-                            }
-                        }
-                    }
-                }
-                
-            }
-            else if ($product->getTypeId() == 'grouped') {
-                
-                // Do we need to do variations?
-                
-                $childProducts = $product->getTypeInstance(true)->getAssociatedProducts($product);
-                foreach ($childProducts as $cp) {
-                    
-                    $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
-                }
-            }
-            else if ($product->getData('has_options') == 1) {
-                $bNeedCustomOptionProducts = true;
-                
-                // Product has custom options
-               
-                foreach ($product->getOptions() as $o) {
-                    $optionType = $o->getType();
-                    
-                    // Look at only drop down boxes or radio buttons
-                    
-                    if (($optionType == 'drop_down' || $optionType == 'radio') 
-                        && $o->getData("is_require") == 1) {
-                        
-                        $optTitle = $o->getData('title');
-                        $optTitle = "custom_".ereg_replace("[^A-Za-z0-9_]", "", str_replace(" ", "_", $optTitle));
-                        
-                        $customOptionsData[$optTitle] = array();
-                        
-                        $variationXml .= "    <Variation><![CDATA[{$optTitle}]]></Variation>\n";
-                        $customOptionAttrs[] = $optTitle;
-                        
-                        $values = $o->getValues();
-                        
-                        if (count($skuList) == 0) {
-                            
-                            foreach ($values as $k => $v) {
-                                
-                                $skuList[] = $product->getData('sku')."-".$v->getData('sku');
-                                
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
-                            }
-                            
-                        }
-                        else {
-                            // Take a copy of the current SKU list
-                            // append all the combinations
-                            
-                            $tempSkuList = array();
-                            foreach ($values as $k => $v) {
-                                
-                                $tempSkuList[] = $v->getData('sku');
-                                
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
-                                $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
-                            }
-                            
-                            $newSkuList = array();
-                            
-                            foreach ($skuList as $oldSku) {
-                                
-                                foreach ($tempSkuList as $newSku) {
-                                    
-                                    $newSkuList[] = $oldSku."-".$newSku;
-                                }
-                            }
-                            
-                            $skuList = $newSkuList;
-                        }
-                        
-                    }
-                }
-                
-                // Build up the SKU combinations for each combination of options
-                foreach ($skuList as $relsku) {
-                    
-                    $productXml .= "    <SKU><![CDATA[{$relsku}]]></SKU>\n";
-                }
-                
-            }
-            
-            $variationXml .= "  </Variations>\n";
-            $productXml .= "  </RelatedSKUs>\n";
-            $productXml .= $variationXml;
-            
-            $productXml .= "  <Custom>\n";
-            
-            // Enumerate all other attribute values
-            $productXml .= $this->enumerateCustomAttributesForProduct($product);
-            
-            $productXml .= "  </Custom>\n";
-            $productXml .= "</Product>\n";
-            
-            // ============ Now generate product elements for all possible custom options ============
-            $idIncrement = 1000000;
-            
-            if ($bNeedCustomOptionProducts) {
-                
-                foreach ($skuList as $customSku) {
-                    
-                    $skuParts = explode("-", str_replace($product->getData('sku'), "temp", $customSku));
-                    
-                    $productXml .= "<Product>\n";
-                    $productXml .= "  <RemoteId>".(($idIncrement++) + $product->getId())."</RemoteId>\n";
-                    $productXml .= "  <ProductType><![CDATA[".$attributeSetName." ]]></ProductType>\n";
-                    $productXml .= "  <Title><![CDATA[{$product->getData('name')} ]]></Title>\n";
-                    $productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
-                    $productXml .= "  <SKU><![CDATA[{$customSku}]]></SKU>\n";
-                    $productXml .= "  <Quantity>{$qty}</Quantity>\n";
-                    $productXml .= "  <Category>{$catids}</Category>\n";
-                    $productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
-                    $productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
-                    $productXml .= "  <RelatedSKUs>   </RelatedSKUs>  <Variations>   </Variations>\n";
-                    $productXml .= "  <Custom>\n";
-                    
-                    // Enumerate all other attribute values
-                    $productXml .= $this->enumerateCustomAttributesForProduct($product);
-                    
-                    $basePrice = $product->getData('price');
-                    $extraPrice = 0.00;
-                    
-                    $indexTemp = 1;
-                    for ( ; $indexTemp < count($skuParts); ) {
-                        $part = $skuParts[$indexTemp];
-                        
-                        $keycust = $customOptionAttrs[$indexTemp-1];
-                        
-                        $custValue = $customOptionsData[$indexTemp][$part]['title'];
-                        
-                        $priceExtra = $customOptionsData[$indexTemp][$part]['price'];
-                        $priceType = $customOptionsData[$indexTemp][$part]['price_type'];
-                        
-                        if ($priceType == "fixed") {
-                            
-                            $extraPrice += (double)$priceExtra;
-                        }
-                        else if ($priceType == "percent") {
-                            
-                            $extraPrice += $basePrice * (100.0 + $priceExtra)/100.0;
-                        }
-                        
-                        $productXml .= "    <$keycust><![CDATA[".$custValue."]]></$keycust>\n";
-                        
-                        $indexTemp++;
-                    }
-                    
-                    $basePrice += $extraPrice; // custom options have prices attached
-                    
-                    $productXml .= "  </Custom>\n";
-                    
-                    
-                    $productXml .= "  <Price>$basePrice</Price>\n";
-                    
-                    $productXml .= "</Product>\n";
-                }
-            }
-            // =======================================================================================
-            unset($product);
+			if(!$skipProduct)
+			{
+				try {
+					$imageUrl = $product->getImageUrl();
+				} catch (Exception $e) {
+					$imageUrl = '';
+				}
+
+				$stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
+				$qty = $stock->getData('qty') - $reduceStockBy;
+
+				$catids = implode(',', $product->getCategoryIds());
+				$categories = $product->getCategoryIds();
+				$catnames = "";
+
+				foreach ($categories as $k => $_category_id) {
+					$_category = Mage::getModel('catalog/category')->load($_category_id);
+					$catnames .= ($_category->getName()) . ", ";
+				}
+
+				$attributeSetModel = Mage::getModel("eav/entity_attribute_set");
+				$attributeSetModel->load($product->getData('attribute_set_id'));
+				$attributeSetName = $attributeSetModel->getAttributeSetName();
+
+				$productXml = "<Product>\n";
+				$productXml .= "  <RemoteId>".$product->getId()."</RemoteId>\n";
+				$productXml .= "  <ProductType><![CDATA[".$attributeSetName." ]]></ProductType>\n";
+				$productXml .= "  <Title><![CDATA[{$product->getName()} ]]></Title>\n";
+				$productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
+				$productXml .= "  <SKU><![CDATA[{$product->getData('sku')}]]></SKU>\n";
+				$productXml .= "  <Price>{$product->getData('price')}</Price>\n";
+				$productXml .= "  <Quantity>{$qty}</Quantity>\n";
+				$productXml .= "  <Category>{$catids}</Category>\n";
+				$productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
+				$productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
+
+				// Add associated/child product references if applicable
+				$productXml .= "  <RelatedSKUs>\n";
+
+				$variationXml = "  <Variations>\n";
+
+				if ($product->getData("type_id") == 'configurable') {
+
+					$childProducts = Mage::getModel('catalog/product_type_configurable')
+					->getUsedProducts(null, $product);
+
+					foreach ($childProducts as $cp) {
+
+						$productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
+					}
+
+					$confAttributes = $product->getTypeInstance(true)->getConfigurableAttributesAsArray($product);
+
+					// Get the attribute(s) which vary
+					if (is_array($confAttributes)) {
+						foreach ($confAttributes as $cattr) {
+							$cattr = serialize($cattr);
+
+							$findTemp = "\"attribute_code\";";
+
+							$cattr = explode($findTemp, $cattr);
+
+							if (isset($cattr[1])) {
+
+								$cattr = explode("\"", $cattr[1]);
+
+								if (isset($cattr[1])) {
+
+									$variationXml .= "<Variation><![CDATA[{$cattr[1]}]]></Variation>\n";
+
+								}
+							}
+						}
+					}
+
+				}
+				else if ($product->getTypeId() == 'grouped') {
+
+					// Do we need to do variations?
+
+					$childProducts = $product->getTypeInstance(true)->getAssociatedProducts($product);
+					foreach ($childProducts as $cp) {
+
+						$productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
+					}
+				}
+				else if ($product->getData('has_options') == 1) {
+					$bNeedCustomOptionProducts = true;
+
+					// Product has custom options
+
+					foreach ($product->getOptions() as $o) {
+						$optionType = $o->getType();
+
+						// Look at only drop down boxes or radio buttons
+
+						if (($optionType == 'drop_down' || $optionType == 'radio') 
+							&& $o->getData("is_require") == 1) {
+
+							$optTitle = $o->getData('title');
+							$optTitle = "custom_".ereg_replace("[^A-Za-z0-9_]", "", str_replace(" ", "_", $optTitle));
+
+							$customOptionsData[$optTitle] = array();
+
+							$variationXml .= "    <Variation><![CDATA[{$optTitle}]]></Variation>\n";
+							$customOptionAttrs[] = $optTitle;
+
+							$values = $o->getValues();
+
+							if (count($skuList) == 0) {
+
+								foreach ($values as $k => $v) {
+
+									$skuList[] = $product->getData('sku')."-".$v->getData('sku');
+
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
+								}
+
+							}
+							else {
+								// Take a copy of the current SKU list
+								// append all the combinations
+
+								$tempSkuList = array();
+								foreach ($values as $k => $v) {
+
+									$tempSkuList[] = $v->getData('sku');
+
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
+									$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
+								}
+
+								$newSkuList = array();
+
+								foreach ($skuList as $oldSku) {
+
+									foreach ($tempSkuList as $newSku) {
+
+										$newSkuList[] = $oldSku."-".$newSku;
+									}
+								}
+
+								$skuList = $newSkuList;
+							}
+
+						}
+					}
+
+					// Build up the SKU combinations for each combination of options
+					foreach ($skuList as $relsku) {
+
+						$productXml .= "    <SKU><![CDATA[{$relsku}]]></SKU>\n";
+					}
+
+				}
+
+				$variationXml .= "  </Variations>\n";
+				$productXml .= "  </RelatedSKUs>\n";
+				$productXml .= $variationXml;
+
+				$productXml .= "  <Custom>\n";
+
+				// Enumerate all other attribute values
+				$productXml .= $this->enumerateCustomAttributesForProduct($product);
+
+				$productXml .= "  </Custom>\n";
+				$productXml .= "</Product>\n";
+
+				// ============ Now generate product elements for all possible custom options ============
+				$idIncrement = 1000000;
+
+				if ($bNeedCustomOptionProducts) {
+
+					foreach ($skuList as $customSku) {
+
+						$skuParts = explode("-", str_replace($product->getData('sku'), "temp", $customSku));
+
+						$productXml .= "<Product>\n";
+						$productXml .= "  <RemoteId>".(($idIncrement++) + $product->getId())."</RemoteId>\n";
+						$productXml .= "  <ProductType><![CDATA[".$attributeSetName." ]]></ProductType>\n";
+						$productXml .= "  <Title><![CDATA[{$product->getData('name')} ]]></Title>\n";
+						$productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
+						$productXml .= "  <SKU><![CDATA[{$customSku}]]></SKU>\n";
+						$productXml .= "  <Quantity>{$qty}</Quantity>\n";
+						$productXml .= "  <Category>{$catids}</Category>\n";
+						$productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
+						$productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
+						$productXml .= "  <RelatedSKUs>   </RelatedSKUs>  <Variations>   </Variations>\n";
+						$productXml .= "  <Custom>\n";
+
+						// Enumerate all other attribute values
+						$productXml .= $this->enumerateCustomAttributesForProduct($product);
+
+						$basePrice = $product->getData('price');
+						$extraPrice = 0.00;
+
+						$indexTemp = 1;
+						for ( ; $indexTemp < count($skuParts); ) {
+							$part = $skuParts[$indexTemp];
+
+							$keycust = $customOptionAttrs[$indexTemp-1];
+
+							$custValue = $customOptionsData[$indexTemp][$part]['title'];
+
+							$priceExtra = $customOptionsData[$indexTemp][$part]['price'];
+							$priceType = $customOptionsData[$indexTemp][$part]['price_type'];
+
+							if ($priceType == "fixed") {
+
+								$extraPrice += (double)$priceExtra;
+							}
+							else if ($priceType == "percent") {
+
+								$extraPrice += $basePrice * (100.0 + $priceExtra)/100.0;
+							}
+
+							$productXml .= "    <$keycust><![CDATA[".$custValue."]]></$keycust>\n";
+
+							$indexTemp++;
+						}
+
+						$basePrice += $extraPrice; // custom options have prices attached
+
+						$productXml .= "  </Custom>\n";
+
+
+						$productXml .= "  <Price>$basePrice</Price>\n";
+
+						$productXml .= "</Product>\n";
+					}
+				}
+				// =======================================================================================
+				unset($product);
+			}
             
             return $productXml;
         }
@@ -689,6 +694,7 @@
             
             return $resultArray;
         }
+		
         private function executeQueryScalar($sql, $column) {
             $result = $this->executeQuery($sql);
             

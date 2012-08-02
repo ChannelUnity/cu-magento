@@ -16,23 +16,29 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     /**
      * Called on saving a product in Magento.
      */
-    public function productWasSaved(Varien_Event_Observer $observer) {
+    public function productWasSaved(Varien_Event_Observer $observer)
+	{
         try {
             $product = $observer->getEvent()->getProduct();
-            
-            $storeViewId = $product->getStoreId();
+			
+			$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
+			
+			if(!$skipProduct)
+			{
+				$storeViewId = $product->getStoreId();
 
-            $xml = "<Products>\n";
-            $xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
-                    ."</SourceURL>\n";
-                    
-            $xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
-            
-            $xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($product->getId(), $storeViewId);
-            
-            $xml .= "</Products>\n";
-            
-            $this->postToChannelUnity($xml, "ProductData");
+				$xml = "<Products>\n";
+				$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+						."</SourceURL>\n";
+
+				$xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
+
+				$xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($product->getId(), $storeViewId);
+
+				$xml .= "</Products>\n";
+
+				$this->postToChannelUnity($xml, "ProductData");
+			}
         }
         catch (Exception $x) {
         }

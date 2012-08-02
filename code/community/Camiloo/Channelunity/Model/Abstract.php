@@ -288,5 +288,37 @@ class Camiloo_Channelunity_Model_Abstract
 
         return $result; 
     }
+	
+	
+	/**
+	 * skipProduct - checks whether to skip product to pass it to CU
+	 * 
+	 * @param type $product - can be product id or product object
+	 * 
+	 * @return boolean - true-skip, false-don't skip
+	 */
+	public function skipProduct($product)
+	{
+		$productStatus = 1;
+		
+		$ignoreDisabled = Mage::getStoreConfig('channelunityint/generalsettings/ignoredisabledproducts');
+			
+		if($product && $ignoreDisabled == 1)
+		{
+			if(is_int($product)) {
+				$product = Mage::getModel('catalog/product')->load($product);
+			}
+			
+			if(is_object($product) && $product->hasSku()) {
+				$productStatus = $product->getStatus(); // 1-Enabled, 2-Disabled
+			}
+			
+			if($productStatus == 2) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
 }
 ?>
