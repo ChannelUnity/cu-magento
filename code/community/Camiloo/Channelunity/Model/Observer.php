@@ -23,9 +23,9 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 	{
         try {
             $product = $observer->getEvent()->getProduct();
-			
+
 			$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
-			
+
 			if(!$skipProduct)
 			{
 				$storeViewId = $product->getStoreId();
@@ -40,7 +40,9 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
 				$xml .= "</Products>\n";
 
-				$this->postToChannelUnity($xml, "ProductData");
+				$result = $this->postToChannelUnity($xml, "ProductData");
+
+                Mage::log('productWasSaved: ' . $result);
 			}
         }
         catch (Exception $x) {
