@@ -26,17 +26,29 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 			
 			$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
 			
+			$storeViewId = $product->getStoreId();
+			
 			if(!$skipProduct)
 			{
-				$storeViewId = $product->getStoreId();
-
 				$xml = "<Products>\n";
-				$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
-						."</SourceURL>\n";
+				
+				$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)."</SourceURL>\n";
 
 				$xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
 
 				$xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($product->getId(), $storeViewId);
+
+				$xml .= "</Products>\n";
+
+				$this->postToChannelUnity($xml, "ProductData");
+			} else {
+				$xml = "<Products>\n";
+			
+				$xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)."</SourceURL>\n";
+				
+				$xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
+
+				$xml .= "<DeletedProductId>{$product->getId()}</DeletedProductId>\n";
 
 				$xml .= "</Products>\n";
 
@@ -59,11 +71,12 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $storeViewId = $product->getStoreId();
 
             $xml = "<Products>\n";
+			
             $xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
                     . "</SourceURL>\n";
             $xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
-            $xml .= "<ProductID>{$product->getId()}</ProductID>\n";
-            $xml .= "<Deleted>TRUE</Deleted>\n";
+			
+            $xml .= "<DeletedProductId>{$product->getId()}</DeletedProductId>\n";
 
             $xml .= "</Products>\n";
 
