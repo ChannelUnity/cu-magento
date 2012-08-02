@@ -178,233 +178,238 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
         $product = Mage::getModel('catalog/product');
         $product->setStoreId($storeId)->load($productId);
 
-        try {
-            $imageUrl = $product->getImageUrl();
-        } catch (Exception $e) {
-            $imageUrl = '';
-        }
+		$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
 
-        $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
-        $qty = $stock->getData('qty') - $reduceStockBy;
+		if(!$skipProduct)
+		{
+			try {
+				$imageUrl = $product->getImageUrl();
+			} catch (Exception $e) {
+				$imageUrl = '';
+			}
 
-        $catids = implode(',', $product->getCategoryIds());
-        $categories = $product->getCategoryIds();
-        $catnames = "";
+			$stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
+			$qty = $stock->getData('qty') - $reduceStockBy;
 
-        foreach ($categories as $k => $_category_id) {
-            $_category = Mage::getModel('catalog/category')->load($_category_id);
-            $catnames .= ($_category->getName()) . ", ";
-        }
+			$catids = implode(',', $product->getCategoryIds());
+			$categories = $product->getCategoryIds();
+			$catnames = "";
 
-        $attributeSetModel = Mage::getModel("eav/entity_attribute_set");
-        $attributeSetModel->load($product->getData('attribute_set_id'));
-        $attributeSetName = $attributeSetModel->getAttributeSetName();
+			foreach ($categories as $k => $_category_id) {
+				$_category = Mage::getModel('catalog/category')->load($_category_id);
+				$catnames .= ($_category->getName()) . ", ";
+			}
 
-        $productXml = "<Product>\n";
-        $productXml .= "  <RemoteId>" . $product->getId() . "</RemoteId>\n";
-        $productXml .= "  <ProductType><![CDATA[" . $attributeSetName . " ]]></ProductType>\n";
-        $productXml .= "  <Title><![CDATA[{$product->getName()} ]]></Title>\n";
-        $productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
-        $productXml .= "  <SKU><![CDATA[{$product->getData('sku')}]]></SKU>\n";
-        $productXml .= "  <Price>{$product->getData('price')}</Price>\n";
-        $productXml .= "  <Quantity>{$qty}</Quantity>\n";
-        $productXml .= "  <Category>{$catids}</Category>\n";
-        $productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
-        $productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
+			$attributeSetModel = Mage::getModel("eav/entity_attribute_set");
+			$attributeSetModel->load($product->getData('attribute_set_id'));
+			$attributeSetName = $attributeSetModel->getAttributeSetName();
 
-        // Add associated/child product references if applicable
-        $productXml .= "  <RelatedSKUs>\n";
+			$productXml = "<Product>\n";
+			$productXml .= "  <RemoteId>" . $product->getId() . "</RemoteId>\n";
+			$productXml .= "  <ProductType><![CDATA[" . $attributeSetName . " ]]></ProductType>\n";
+			$productXml .= "  <Title><![CDATA[{$product->getName()} ]]></Title>\n";
+			$productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
+			$productXml .= "  <SKU><![CDATA[{$product->getData('sku')}]]></SKU>\n";
+			$productXml .= "  <Price>{$product->getData('price')}</Price>\n";
+			$productXml .= "  <Quantity>{$qty}</Quantity>\n";
+			$productXml .= "  <Category>{$catids}</Category>\n";
+			$productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
+			$productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
 
-        $variationXml = "  <Variations>\n";
+			// Add associated/child product references if applicable
+			$productXml .= "  <RelatedSKUs>\n";
 
-        if ($product->getData("type_id") == 'configurable') {
+			$variationXml = "  <Variations>\n";
 
-            $childProducts = Mage::getModel('catalog/product_type_configurable')
-                    ->getUsedProducts(null, $product);
+			if ($product->getData("type_id") == 'configurable') {
 
-            foreach ($childProducts as $cp) {
+				$childProducts = Mage::getModel('catalog/product_type_configurable')
+						->getUsedProducts(null, $product);
 
-                $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
-            }
+				foreach ($childProducts as $cp) {
 
-            $confAttributes = $product->getTypeInstance(true)->getConfigurableAttributesAsArray($product);
+					$productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
+				}
 
-            // Get the attribute(s) which vary
-            if (is_array($confAttributes)) {
-                foreach ($confAttributes as $cattr) {
-                    $cattr = serialize($cattr);
+				$confAttributes = $product->getTypeInstance(true)->getConfigurableAttributesAsArray($product);
 
-                    $findTemp = "\"attribute_code\";";
+				// Get the attribute(s) which vary
+				if (is_array($confAttributes)) {
+					foreach ($confAttributes as $cattr) {
+						$cattr = serialize($cattr);
 
-                    $cattr = explode($findTemp, $cattr);
+						$findTemp = "\"attribute_code\";";
 
-                    if (isset($cattr[1])) {
+						$cattr = explode($findTemp, $cattr);
 
-                        $cattr = explode("\"", $cattr[1]);
+						if (isset($cattr[1])) {
 
-                        if (isset($cattr[1])) {
+							$cattr = explode("\"", $cattr[1]);
 
-                            $variationXml .= "<Variation><![CDATA[{$cattr[1]}]]></Variation>\n";
-                        }
-                    }
-                }
-            }
-        } else if ($product->getTypeId() == 'grouped') {
+							if (isset($cattr[1])) {
 
-            // Do we need to do variations?
+								$variationXml .= "<Variation><![CDATA[{$cattr[1]}]]></Variation>\n";
+							}
+						}
+					}
+				}
+			} else if ($product->getTypeId() == 'grouped') {
 
-            $childProducts = $product->getTypeInstance(true)->getAssociatedProducts($product);
-            foreach ($childProducts as $cp) {
+				// Do we need to do variations?
 
-                $productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
-            }
-        } else if ($product->getData('has_options') == 1) {
-            $bNeedCustomOptionProducts = true;
+				$childProducts = $product->getTypeInstance(true)->getAssociatedProducts($product);
+				foreach ($childProducts as $cp) {
 
-            // Product has custom options
+					$productXml .= "  <SKU><![CDATA[{$cp->getData('sku')}]]></SKU>\n";
+				}
+			} else if ($product->getData('has_options') == 1) {
+				$bNeedCustomOptionProducts = true;
 
-            foreach ($product->getOptions() as $o) {
-                $optionType = $o->getType();
+				// Product has custom options
 
-                // Look at only drop down boxes or radio buttons
+				foreach ($product->getOptions() as $o) {
+					$optionType = $o->getType();
 
-                if (($optionType == 'drop_down' || $optionType == 'radio')
-                        && $o->getData("is_require") == 1) {
+					// Look at only drop down boxes or radio buttons
 
-                    $optTitle = $o->getData('title');
-                    $optTitle = "custom_" . ereg_replace("[^A-Za-z0-9_]", "", str_replace(" ", "_", $optTitle));
+					if (($optionType == 'drop_down' || $optionType == 'radio')
+							&& $o->getData("is_require") == 1) {
 
-                    $customOptionsData[$optTitle] = array();
+						$optTitle = $o->getData('title');
+						$optTitle = "custom_" . ereg_replace("[^A-Za-z0-9_]", "", str_replace(" ", "_", $optTitle));
 
-                    $variationXml .= "    <Variation><![CDATA[{$optTitle}]]></Variation>\n";
-                    $customOptionAttrs[] = $optTitle;
+						$customOptionsData[$optTitle] = array();
 
-                    $values = $o->getValues();
+						$variationXml .= "    <Variation><![CDATA[{$optTitle}]]></Variation>\n";
+						$customOptionAttrs[] = $optTitle;
 
-                    if (count($skuList) == 0) {
+						$values = $o->getValues();
 
-                        foreach ($values as $k => $v) {
+						if (count($skuList) == 0) {
 
-                            $skuList[] = $product->getData('sku') . "-" . $v->getData('sku');
+							foreach ($values as $k => $v) {
 
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
-                        }
-                    } else {
-                        // Take a copy of the current SKU list
-                        // append all the combinations
+								$skuList[] = $product->getData('sku') . "-" . $v->getData('sku');
 
-                        $tempSkuList = array();
-                        foreach ($values as $k => $v) {
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
+							}
+						} else {
+							// Take a copy of the current SKU list
+							// append all the combinations
 
-                            $tempSkuList[] = $v->getData('sku');
+							$tempSkuList = array();
+							foreach ($values as $k => $v) {
 
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
-                            $customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
-                        }
+								$tempSkuList[] = $v->getData('sku');
 
-                        $newSkuList = array();
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')] = array();
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["title"] = $v->getData('title');
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price"] = $v->getData('price');
+								$customOptionsData[count($customOptionAttrs)][$v->getData('sku')]["price_type"] = $v->getData('price_type');
+							}
 
-                        foreach ($skuList as $oldSku) {
+							$newSkuList = array();
 
-                            foreach ($tempSkuList as $newSku) {
+							foreach ($skuList as $oldSku) {
 
-                                $newSkuList[] = $oldSku . "-" . $newSku;
-                            }
-                        }
+								foreach ($tempSkuList as $newSku) {
 
-                        $skuList = $newSkuList;
-                    }
-                }
-            }
+									$newSkuList[] = $oldSku . "-" . $newSku;
+								}
+							}
 
-            // Build up the SKU combinations for each combination of options
-            foreach ($skuList as $relsku) {
+							$skuList = $newSkuList;
+						}
+					}
+				}
 
-                $productXml .= "    <SKU><![CDATA[{$relsku}]]></SKU>\n";
-            }
-        }
+				// Build up the SKU combinations for each combination of options
+				foreach ($skuList as $relsku) {
 
-        $variationXml .= "  </Variations>\n";
-        $productXml .= "  </RelatedSKUs>\n";
-        $productXml .= $variationXml;
+					$productXml .= "    <SKU><![CDATA[{$relsku}]]></SKU>\n";
+				}
+			}
 
-        $productXml .= "  <Custom>\n";
+			$variationXml .= "  </Variations>\n";
+			$productXml .= "  </RelatedSKUs>\n";
+			$productXml .= $variationXml;
 
-        // Enumerate all other attribute values
-        $productXml .= $this->enumerateCustomAttributesForProduct($product);
+			$productXml .= "  <Custom>\n";
 
-        $productXml .= "  </Custom>\n";
-        $productXml .= "</Product>\n";
+			// Enumerate all other attribute values
+			$productXml .= $this->enumerateCustomAttributesForProduct($product);
 
-        // ============ Now generate product elements for all possible custom options ============
-        $idIncrement = 1000000;
+			$productXml .= "  </Custom>\n";
+			$productXml .= "</Product>\n";
 
-        if ($bNeedCustomOptionProducts) {
+			// ============ Now generate product elements for all possible custom options ============
+			$idIncrement = 1000000;
 
-            foreach ($skuList as $customSku) {
+			if ($bNeedCustomOptionProducts) {
 
-                $skuParts = explode("-", str_replace($product->getData('sku'), "temp", $customSku));
+				foreach ($skuList as $customSku) {
 
-                $productXml .= "<Product>\n";
-                $productXml .= "  <RemoteId>" . (($idIncrement++) + $product->getId()) . "</RemoteId>\n";
-                $productXml .= "  <ProductType><![CDATA[" . $attributeSetName . " ]]></ProductType>\n";
-                $productXml .= "  <Title><![CDATA[{$product->getData('name')} ]]></Title>\n";
-                $productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
-                $productXml .= "  <SKU><![CDATA[{$customSku}]]></SKU>\n";
-                $productXml .= "  <Quantity>{$qty}</Quantity>\n";
-                $productXml .= "  <Category>{$catids}</Category>\n";
-                $productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
-                $productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
-                $productXml .= "  <RelatedSKUs>   </RelatedSKUs>  <Variations>   </Variations>\n";
-                $productXml .= "  <Custom>\n";
+					$skuParts = explode("-", str_replace($product->getData('sku'), "temp", $customSku));
 
-                // Enumerate all other attribute values
-                $productXml .= $this->enumerateCustomAttributesForProduct($product);
+					$productXml .= "<Product>\n";
+					$productXml .= "  <RemoteId>" . (($idIncrement++) + $product->getId()) . "</RemoteId>\n";
+					$productXml .= "  <ProductType><![CDATA[" . $attributeSetName . " ]]></ProductType>\n";
+					$productXml .= "  <Title><![CDATA[{$product->getData('name')} ]]></Title>\n";
+					$productXml .= "  <Description><![CDATA[{$product->getData('description')} ]]></Description>\n";
+					$productXml .= "  <SKU><![CDATA[{$customSku}]]></SKU>\n";
+					$productXml .= "  <Quantity>{$qty}</Quantity>\n";
+					$productXml .= "  <Category>{$catids}</Category>\n";
+					$productXml .= "  <CategoryName><![CDATA[{$catnames} ]]></CategoryName>\n";
+					$productXml .= "  <Image><![CDATA[{$imageUrl}]]></Image>\n";
+					$productXml .= "  <RelatedSKUs>   </RelatedSKUs>  <Variations>   </Variations>\n";
+					$productXml .= "  <Custom>\n";
 
-                $basePrice = $product->getData('price');
-                $extraPrice = 0.00;
+					// Enumerate all other attribute values
+					$productXml .= $this->enumerateCustomAttributesForProduct($product);
 
-                $indexTemp = 1;
-                for (; $indexTemp < count($skuParts);) {
-                    $part = $skuParts[$indexTemp];
+					$basePrice = $product->getData('price');
+					$extraPrice = 0.00;
 
-                    $keycust = $customOptionAttrs[$indexTemp - 1];
+					$indexTemp = 1;
+					for (; $indexTemp < count($skuParts);) {
+						$part = $skuParts[$indexTemp];
 
-                    $custValue = $customOptionsData[$indexTemp][$part]['title'];
+						$keycust = $customOptionAttrs[$indexTemp - 1];
 
-                    $priceExtra = $customOptionsData[$indexTemp][$part]['price'];
-                    $priceType = $customOptionsData[$indexTemp][$part]['price_type'];
+						$custValue = $customOptionsData[$indexTemp][$part]['title'];
 
-                    if ($priceType == "fixed") {
+						$priceExtra = $customOptionsData[$indexTemp][$part]['price'];
+						$priceType = $customOptionsData[$indexTemp][$part]['price_type'];
 
-                        $extraPrice += (double) $priceExtra;
-                    } else if ($priceType == "percent") {
+						if ($priceType == "fixed") {
 
-                        $extraPrice += $basePrice * (100.0 + $priceExtra) / 100.0;
-                    }
+							$extraPrice += (double) $priceExtra;
+						} else if ($priceType == "percent") {
 
-                    $productXml .= "    <$keycust><![CDATA[" . $custValue . "]]></$keycust>\n";
+							$extraPrice += $basePrice * (100.0 + $priceExtra) / 100.0;
+						}
 
-                    $indexTemp++;
-                }
+						$productXml .= "    <$keycust><![CDATA[" . $custValue . "]]></$keycust>\n";
 
-                $basePrice += $extraPrice; // custom options have prices attached
+						$indexTemp++;
+					}
 
-                $productXml .= "  </Custom>\n";
+					$basePrice += $extraPrice; // custom options have prices attached
 
+					$productXml .= "  </Custom>\n";
 
-                $productXml .= "  <Price>$basePrice</Price>\n";
 
-                $productXml .= "</Product>\n";
-            }
-        }
-        // =======================================================================================
-        unset($product);
+					$productXml .= "  <Price>$basePrice</Price>\n";
+
+					$productXml .= "</Product>\n";
+				}
+			}
+			// =======================================================================================
+			unset($product);
+			}
 
         return $productXml;
     }
