@@ -222,13 +222,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 
                 if (is_object($product)) {
                     
-                    $product->setPrice(((string) $orderitem->Price) / $reverseRate);
+                    $product->setPrice( $this->getDeTaxPrice((string) $orderitem->Price) / $reverseRate);
                     
                     $item = Mage::getModel('sales/quote_item');
                     $item->setQuote($quote)->setProduct($product);
                     $item->setData('qty', (string) $orderitem->Quantity);
-                    $item->setCustomPrice((string) $orderitem->Price);
-                    $item->setOriginalCustomPrice((string) $orderitem->Price);
+                    $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
+                    $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
                     
                     $quote->addItem($item);
                     
@@ -280,13 +280,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     
                     if (is_object($product)) {
                         
-                        $product->setPrice(((string) $orderitem->Price) / $reverseRate);
+                        $product->setPrice($this->getDeTaxPrice((string) $orderitem->Price) / $reverseRate);
                         
                         $item = Mage::getModel('sales/quote_item');
                         $item->setQuote($quote)->setProduct($product);
                         $item->setData('qty', (string) $orderitem->Quantity);
-                        $item->setCustomPrice((string) $orderitem->Price);
-                        $item->setOriginalCustomPrice((string) $orderitem->Price);
+                        $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
+                        $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
                         $quote->addItem($item);
                         
                         $quote->save();
@@ -301,7 +301,6 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             echo "<Info>Set Billing Address</Info>";
             
             $postcode = $this->fixEncoding((string) $order->ShippingInfo->PostalCode);
-       //     $postcode = str_replace("-", "_", $postcode); // can throw exception if - in postcode
               
             $regionModel = Mage::getModel('directory/region')->loadByCode((string) $order->ShippingInfo->State, (string) $order->ShippingInfo->Country);
             $regionId = is_object($regionModel) ? $regionModel->getId() : ((string) $order->ShippingInfo->State);
@@ -708,7 +707,31 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
         }
     }
-	
+    
+	public function getDeTaxPrice($price) {
+        
+        $taxRate = 1;
+        $calc = Mage::getSingleton('tax/calculation');
+        $rates = $calc->getRatesForAllProductTaxClasses($calc->getRateRequest());
+        
+        foreach ($rates as $class => $rate) {
+            $taxRate = $rate;
+            
+            break;
+        }
+        
+        if ($taxRate == 0) {
+            
+            $taxRate = 1;
+            return $price;
+            
+        }
+        else {
+            
+            return $price / (100.0 + $taxRate) * 100.0;
+        }
+    }
+    
 	public function doUpdate($dataArray) {
         
         foreach ($dataArray->Orders->Order as $order) {
