@@ -40,9 +40,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
 				$xml .= "</Products>\n";
 
-				$result = $this->postToChannelUnity($xml, "ProductData");
-
-                Mage::log('productWasSaved: ' . $result);
+				$this->postToChannelUnity($xml, "ProductData");
 			}
         }
         catch (Exception $x) {
