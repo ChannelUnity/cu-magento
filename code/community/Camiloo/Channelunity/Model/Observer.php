@@ -151,6 +151,12 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     public function getItemsForUpdateCommon($items, $storeId)
     {
         try {
+            $xml = "<Products>\n";
+            $xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
+                    . "</SourceURL>\n";
+
+            $xml .= "<StoreViewId>$storeId</StoreViewId>\n";
+            
             foreach ($items as $item) {
 
                 $sku = $item->getSku();
@@ -160,13 +166,16 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
                     continue;
                 }
-
+                
                 // Item was ordered on website, stock will have reduced, update to CU
-                $xml = Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct(
-                        $prodTemp->getId(), $storeId, $item->getQtyOrdered());
+                $xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct(
+                        $prodTemp->getId(), $storeId, 0 /* $item->getQtyOrdered() */);
 
-                $this->postToChannelUnity($xml, "ProductData");
             }
+            $xml .= "</Products>\n";
+            
+            $this->postToChannelUnity($xml, "ProductData");
+            
         } catch (Exception $x) {
 
         }

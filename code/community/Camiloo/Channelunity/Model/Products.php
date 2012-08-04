@@ -436,7 +436,7 @@
                             $myval = serialize($myval);
                         }
                         
-                        if (is_object($attribute)) {
+                       /* if (is_object($attribute)) {
                             
                             $prodDataValue = $attribute->getSource()
                                 ->getOptionText($myval);
@@ -447,8 +447,9 @@
                             }
                         }
                         else {
+                        */
                             $prodDataValue = $myval;
-                        }
+                       // }
                     } else {
                         $prodDataValue = $product->getData($attr);
                     }
