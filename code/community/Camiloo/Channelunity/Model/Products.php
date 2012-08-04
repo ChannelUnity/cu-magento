@@ -408,8 +408,10 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 				}
 			}
 			// =======================================================================================
-			unset($product);
-			}
+        
+            unset($product);
+        }
+    
 
         return $productXml;
     }
@@ -428,30 +430,14 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                     
                 if ($attribute = $product->getResource()->getAttribute($attr)) {
                         
-                        $myval = $product->getData($attr);
-                        
-                        if (is_array($myval)) {
-                            $myval = serialize($myval);
-                        }
-                        
-                       /* if (is_object($attribute)) {
-                            
-                            $prodDataValue = $attribute->getSource()
-                                ->getOptionText($myval);
-                            
-                            if ($prodDataValue == '') {
-                                
-                                $prodDataValue = $myval;
-                            }
-                        }
-                        else {
-                        */
-                        
-                            $prodDataValue = $myval;
-                       // }
-                    } else {
-                        $prodDataValue = $myval;
+                    $myval = $product->getData($attr);
+                    
+                    if (is_array($myval)) {
+                        $myval = serialize($myval);
                     }
+                    
+                    $prodDataValue = $myval;
+                    
                 } else {
                     $prodDataValue = $product->getData($attr);
                 }
@@ -701,3 +687,4 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
     }
 
 }
+
