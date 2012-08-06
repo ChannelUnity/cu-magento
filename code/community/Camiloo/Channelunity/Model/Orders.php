@@ -346,10 +346,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 				'should_ignore_validation' => true
 			);
             
-            Mage::getSingleton('core/session')->setShippingPrice(((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
+            Mage::getSingleton('core/session')->setShippingPrice(
+                ((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
             
 			// add the shipping address to the quote.
 			$shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
+			$quote->getShippingAddress()->setData('should_ignore_validation', true);
+			$quote->getBillingAddress()->setData('should_ignore_validation', true);
             /////////////////////////////////////////////
               $method = Mage::getModel('shipping/rate_result_method');
               $method->setCarrier('channelunitycustomrate');
@@ -371,7 +374,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$shippingAddress->setShippingMethod('channelunitycustomrate_channelunitycustomrate');
 			$shippingAddress->setShippingDescription((string) $order->ShippingInfo->Service);
 			$shippingAddress->setPaymentMethod('channelunitypayment');
-                          
+            
             $quote->getPayment()->importData(array(
                                                      'method' => 'channelunitypayment'
                                                      ));
@@ -386,6 +389,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 			$currentstore = Mage::app()->getStore()->getId();
 			// upgrade to admin permissions to avoid item qty not available issue
 			Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
+			
 			$service->submitAll();
 			$newOrder = $service->getOrder(); // returns full order object.
 			// we're done; sign out of admin permission
