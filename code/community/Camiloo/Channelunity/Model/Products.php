@@ -408,10 +408,10 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 				}
 			}
 			// =======================================================================================
-        
+
             unset($product);
         }
-    
+
 
         return $productXml;
     }
@@ -424,20 +424,33 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 
         foreach ($attributeNames as $k => $attr) {
 
-            if ($attr != 'name' && $attr != 'description' && $attr != 'sku'
-                    && $attr != 'price' && $attr != 'qty'
-                    && $attr != 'stock_item' && $attr != 'tier_price') {
-                    
+            if (!in_array($attr, array(
+                'name', 'description', 'sku', 'price', 'qty',
+                'stock_item', 'tier_price'
+                ))) {
+
                 if ($attribute = $product->getResource()->getAttribute($attr)) {
-                        
+
                     $myval = $product->getData($attr);
-                    
+
                     if (is_array($myval)) {
                         $myval = serialize($myval);
                     }
-                    
-                    $prodDataValue = $myval;
-                    
+
+                    if (is_object($attribute) && $attribute->usesSource()) {
+
+                        $prodDataValue = $attribute->getSource()
+                            ->getOptionText($myval);
+
+                        if ($prodDataValue == '') {
+
+                            $prodDataValue = $myval;
+                        }
+                    }
+                    else {
+                        $prodDataValue = $myval;
+                    }
+
                 } else {
                     $prodDataValue = $product->getData($attr);
                 }
@@ -562,9 +575,9 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
     public function getAllSKUs($request)
     {
         $collectionOfProduct = Mage::getModel('catalog/product')->getCollection();
-		
+
 		$ignoreDisabled = Mage::getStoreConfig('channelunityint/generalsettings/ignoredisabledproducts');
-		
+
 		if($ignoreDisabled == 1) {
 			$collectionOfProduct->addFieldToFilter('status', 1);
 		}
