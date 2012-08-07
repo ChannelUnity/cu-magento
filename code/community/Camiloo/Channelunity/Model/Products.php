@@ -634,8 +634,6 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 			
             $totalNumProducts = $this->executeQueryScalar(str_replace("SELECT", "SELECT count(*) as count_cu, ", $collectionOfProduct->getSelect()), 'count_cu');
 			
-			//TODO Delete this log
-			Mage::log('Total Products Count: '.$totalNumProducts);
 
             $collectionOfProduct->addAttributeToFilter("entity_id", array('gteq' => $rangeFrom))
                     ->setOrder('entity_id', 'ASC');
