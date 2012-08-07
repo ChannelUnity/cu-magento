@@ -320,5 +320,21 @@ class Camiloo_Channelunity_Model_Abstract
 		
 		return false;
 	}
+	
+	/**
+	 * skipProduct - checks whether to skip product to pass it to CU
+	 * 
+	 * //product field: status, 1-Enabled, 2-Disabled
+	 * 
+	 * @return boolean - true-ignore disabled, false-don't ignore
+	 */
+	public function ignoreDisabled()
+	{
+		$ignoreDisabled = false;
+		
+		$ignoreDisabled = Mage::getStoreConfig('channelunityint/generalsettings/ignoredisabledproducts');
+		
+		return $ignoreDisabled;
+	}
 }
 ?>

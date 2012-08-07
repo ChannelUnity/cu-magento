@@ -627,7 +627,15 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
             } else {
                 $collectionOfProduct = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($storeId);
             }
+			
+			if($this->ignoreDisabled()) {
+				$collectionOfProduct->addFieldToFilter('status', 1);
+			}
+			
             $totalNumProducts = $this->executeQueryScalar(str_replace("SELECT", "SELECT count(*) as count_cu, ", $collectionOfProduct->getSelect()), 'count_cu');
+			
+			//TODO Delete this log
+			$this->log('Total Products Count: '.$totalNumProducts);
 
             $collectionOfProduct->addAttributeToFilter("entity_id", array('gteq' => $rangeFrom))
                     ->setOrder('entity_id', 'ASC');
