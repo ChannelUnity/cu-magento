@@ -608,13 +608,26 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 
         try {
 
+			$collectionOfProduct = null;
+			
             // get the highest product ID
             if (version_compare(Mage::getVersion(), "1.6.0.0", ">=")
                     && class_exists("Mage_Catalog_Model_Resource_Product_Collection")) {
-                $collectionOfProduct = Mage::getModel('channelunity/collection')->addStoreFilter($storeId);
+                $collectionOfProduct = Mage::getModel('channelunity/collection');
             } else {
-                $collectionOfProduct = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($storeId);
+                $collectionOfProduct = Mage::getModel('catalog/product')->getCollection();
             }
+			
+			if($this->ignoreDisabled()) {
+				$collectionOfProduct->addFieldToFilter('status', 1);
+			}
+			
+            $totalNumProducts = $this->executeQueryScalar(str_replace("SELECT", "SELECT count(*) as count_cu, ", $collectionOfProduct->getSelect()), 'count_cu');
+			
+			
+			$collectionOfProduct->addStoreFilter($storeId);
+			
+			//Only to retrieve the last item in shop
             $collectionOfProduct->setOrder('entity_id', 'DESC');
             $collectionOfProduct->setPageSize(1);
             $collectionOfProduct->setCurPage(1);
@@ -628,13 +641,6 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                 $collectionOfProduct = Mage::getModel('catalog/product')->getCollection()->addStoreFilter($storeId);
             }
 			
-			if($this->ignoreDisabled()) {
-				$collectionOfProduct->addFieldToFilter('status', 1);
-			}
-			
-            $totalNumProducts = $this->executeQueryScalar(str_replace("SELECT", "SELECT count(*) as count_cu, ", $collectionOfProduct->getSelect()), 'count_cu');
-			
-
             $collectionOfProduct->addAttributeToFilter("entity_id", array('gteq' => $rangeFrom))
                     ->setOrder('entity_id', 'ASC');
 
