@@ -197,4 +197,10 @@ EOD;
         }
 	}
 
+
+    public function resendordersAction()
+    {
+        return Mage::getModel('channelunity/observer')->resendPreviousOrders();
+    }
+
 }
