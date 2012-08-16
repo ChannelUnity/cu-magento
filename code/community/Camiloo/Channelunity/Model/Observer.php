@@ -279,9 +279,13 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 $carrierName = $track->getCarrierCode();
             }
 
-            $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, $carrierName, $track->getTitle(), $track->getNumber());
-            $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
+            if (!empty($xml)) {
+                $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, $carrierName, $track->getTitle(), $track->getNumber());
+                $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
             Mage::log('saveTrackingToAmazon: ' . $result);
+            } else {
+                Mage::log('Nothing to ship');
+            }
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -294,8 +298,12 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $order = $shipment->getOrder();
 
             $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, "", "", "");
-            $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
-            Mage::log('shipAmazon: ' . $result);
+            if (!empty($xml)) {
+                $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
+                Mage::log('shipAmazon: ' . $result);
+            } else {
+                Mage::log('Nothing to ship');
+            }
         } catch (Exception $e) {
 
             Mage::logException($e);
