@@ -487,7 +487,6 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
     {
         $row = $args['row'];
         $productId = $row["sku"];
-
         echo "<SKU><![CDATA[ " . $productId . " ]]></SKU>";
     }
 
@@ -571,7 +570,9 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 
     public function getAllSKUs($request)
     {
-        $collectionOfProduct = Mage::getModel('catalog/product')->getCollection();
+        $collectionOfProduct = Mage::getModel('catalog/product')
+                ->getCollection()
+                ->addAttributeToSelect('sku');
 
         $ignoreDisabled = Mage::getStoreConfig('channelunityint/generalsettings/ignoredisabledproducts');
 
@@ -581,8 +582,12 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
 
         $sql = $collectionOfProduct->getSelect();
 
-        Mage::getSingleton('core/resource_iterator')->walk(
-                $sql, array(array($this, 'generateCuXmlSku')), array('storeId' => 0), $collectionOfProduct->getSelect()->getAdapter());
+        $result = Mage::getSingleton('core/resource_iterator')->walk(
+                $sql,
+                array(array($this, 'generateCuXmlSku')),
+                array('storeId' => 0),
+                $collectionOfProduct->getSelect()->getAdapter()
+                );
     }
 
     /**
