@@ -21,42 +21,51 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
      */
     public function productWasSaved(Varien_Event_Observer $observer)
 	{
-        try {
+	try {
             $product = $observer->getEvent()->getProduct();
 
 			$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
 			
-			$storeViewId = $product->getStoreId();
+		//$storeViewId = $product->getStoreId();
+		$allStores = Mage::app()->getStores();
+		foreach ($allStores as $_eachStoreId => $val) 
+		{
+		$storeId = Mage::app()->getStore($_eachStoreId)->getId();
 			
 			if(!$skipProduct)
 			{
+
 				$xml = "<Products>\n";
 				
 				$xml .= "<SourceURL>".Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)."</SourceURL>\n";
 
-				$xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
+				$xml .= "<StoreViewId>".$storeId."</StoreViewId>\n";
 
-				$xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($product->getId(), $storeViewId);
+				$xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($product->getId(), $storeId);
 
 				$xml .= "</Products>\n";
 
 				$this->postToChannelUnity($xml, "ProductData");
+				
 			} else {
 				$xml = "<Products>\n";
 			
 				$xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)."</SourceURL>\n";
 				
-				$xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
+				$xml .= "<StoreViewId>".$storeId."</StoreViewId>\n";
 
 				$xml .= "<DeletedProductId>{$product->getId()}</DeletedProductId>\n";
 
 				$xml .= "</Products>\n";
 
 				$this->postToChannelUnity($xml, "ProductData");
+				
 			}
+		}
         }
         catch (Exception $x) {
-			Mage::logException($e);
+			Mage::logException($x);
+
         }
     }
 
