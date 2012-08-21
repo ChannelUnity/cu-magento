@@ -21,10 +21,10 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
      */
     public function productWasSaved(Varien_Event_Observer $observer)
 	{
-	try {
+        try {
             $product = $observer->getEvent()->getProduct();
 
-			$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
+		$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
 			
 		//$storeViewId = $product->getStoreId();
 		$allStores = Mage::app()->getStores();
@@ -80,11 +80,11 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $storeViewId = $product->getStoreId();
 
             $xml = "<Products>\n";
-			
+
             $xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
                     . "</SourceURL>\n";
             $xml .= "<StoreViewId>$storeViewId</StoreViewId>\n";
-			
+
             $xml .= "<DeletedProductId>{$product->getId()}</DeletedProductId>\n";
 
             $xml .= "</Products>\n";
@@ -144,24 +144,24 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
                 $this->postToChannelUnity($xml, "ProductData");
             } else if ($evname == 'adminhtml_catalog_product_massStatus') { //update all products status on the massive status update
-				
+
 				$updatedProductsId = $observer->getEvent()->getControllerAction()->getRequest()->getParam('product');
 				$status = $observer->getEvent()->getControllerAction()->getRequest()->getParam('status');
-				
+
 				if(is_array($updatedProductsId) && !empty($updatedProductsId))
 				{
 					$storeViewId = Mage::helper('adminhtml/catalog_product_edit_action_attribute')->getSelectedStoreId();
-					
+
 					$xml = "<Products>\n";
 					$xml .= "<SourceURL>" . Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)."</SourceURL>\n";
 					$xml .= "<StoreViewId>{$storeViewId}</StoreViewId>\n";
-               
+
 					foreach ($updatedProductsId as $productId)
 					{
 						$product = Mage::getModel('catalog/product')->load($productId);
-						
+
 						$skipProduct = Mage::getModel('channelunity/products')->skipProduct($product);
-						
+
 						if($skipProduct)
 						{
 							$xml .= "<DeletedProductId>" . $productId . "</DeletedProductId>\n";
@@ -169,12 +169,12 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 							$xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct($productId, $storeViewId);
 						}
 					}
-					
+
 					$xml .= "</Products>\n";
-					
+
 					$this->postToChannelUnity($xml, "ProductData");
 				}
-				
+
 			}
         } catch (Exception $e) {
             Mage::logException($e);
@@ -216,7 +216,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                     . "</SourceURL>\n";
 
             $xml .= "<StoreViewId>$storeId</StoreViewId>\n";
-            
+
             foreach ($items as $item) {
 
                 $sku = $item->getSku();
@@ -226,16 +226,16 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
                     continue;
                 }
-                
+
                 // Item was ordered on website, stock will have reduced, update to CU
                 $xml .= Mage::getModel('channelunity/products')->generateCuXmlForSingleProduct(
                         $prodTemp->getId(), $storeId, 0 /* $item->getQtyOrdered() */);
 
             }
             $xml .= "</Products>\n";
-            
+
             $this->postToChannelUnity($xml, "ProductData");
-            
+
         } catch (Exception $x) {
             Mage::logException($e);
         }
@@ -288,9 +288,13 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 $carrierName = $track->getCarrierCode();
             }
 
-            $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, $carrierName, $track->getTitle(), $track->getNumber());
-            $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
+            if (!empty($xml)) {
+                $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, $carrierName, $track->getTitle(), $track->getNumber());
+                $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
             Mage::log('saveTrackingToAmazon: ' . $result);
+            } else {
+                Mage::log('Nothing to ship');
+            }
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -303,10 +307,91 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $order = $shipment->getOrder();
 
             $xml = Mage::getModel('channelunity/orders')->generateCuXmlForOrderShip($order, "", "", "");
-            $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
-            Mage::log('shipAmazon: ' . $result);
+            if (!empty($xml)) {
+                $result = $this->postToChannelUnity($xml, "OrderStatusUpdate");
+                Mage::log('shipAmazon: ' . $result);
+            } else {
+                Mage::log('Nothing to ship');
+            }
         } catch (Exception $e) {
 
+            Mage::logException($e);
+        }
+    }
+
+    public function resendPreviousOrders()
+    {
+        // Current order transactions
+        $collection = Mage::getModel('sales/order_payment_transaction')
+                ->getCollection();
+
+        // Foreach transaction
+        foreach ($collection as $txn) {
+
+            // Get order
+            $order = Mage::getModel('sales/order')->load($txn->getOrderId());
+            // Get additional info
+            $info = $txn->getAdditionalInformation();
+
+            // Start XML
+            $xml = '';
+
+            // Add subscription id
+            if (isset($info['SubscriptionId'])) {
+                $xml .= '<SubscriptionID>' . $info['SubscriptionId']
+                        . '</SubscriptionID>';
+            }
+            // Add order id
+            if (isset($info['RemoteOrderID'])) {
+                $xml .= '<OrderID>' . $info['RemoteOrderID'] . '</OrderID>';
+            }
+
+            // Convert Magento state to CU status
+            switch ($order->getState()) {
+                case 'canceled':
+                    $status = 'Cancelled';
+                    break;
+                case 'closed':
+                    $status = 'Cancelled"';
+                    break;
+                case 'complete':
+                    $status = 'Complete';
+                    break;
+                case 'processing':
+                    $status = 'Processing';
+                    break;
+                case 'holded':
+                    $status = 'OnHold';
+                    break;
+                case 'new':
+                    $status = 'Processing';
+                    break;
+                case 'payment_review':
+                    $status = 'OnHold';
+                    break;
+                case 'pending_payment':
+                    $status = 'OnHold';
+                    break;
+                case 'fraud':
+                    $status = 'OnHold';
+                    break;
+               default:
+                    $status = 'Processing';
+                   break;
+            }
+
+            // Add status
+            $xml .= '<OrderStatus>' . $status . '</OrderStatus>';
+            // Add date
+            $xml .= '<ShipmentDate>' . $txn->getCreatedAt() . '</ShipmentDate>';
+
+        }
+
+        // Perform post
+        try {
+            $result = $this->postToChannelUnity($xml, 'OrderStatusUpdate');
+            Mage::log('resendPreviousOrders: ' . $result);
+        } catch (Exception $e) {
             Mage::logException($e);
         }
     }

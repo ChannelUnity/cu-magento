@@ -1,6 +1,6 @@
 <?php
 /**
- * ChannelUnity connector for Magento Commerce 
+ * ChannelUnity connector for Magento Commerce
  *
  * @category   Camiloo
  * @package    Camiloo_Channelunity
@@ -11,16 +11,16 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
 {
 
 	protected $_collection = 'catalog/category';
-	
+
     /**
      * Returns an XML list of all categories in this Magento install.
      */
 	public function doRead($request) {
         $collection = Mage::getModel($this->_collection)->getCollection()
             ->addAttributeToSelect("name");
-        
+
         // position, category_path, parent, level
-        
+
         echo "<CategoryList>\n";
         foreach ($collection as $category) {
             echo "<Category>\n";
@@ -32,19 +32,19 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
             echo "  <Level>{$category->getData('level')}</Level>\n";
             echo "</Category>\n\n";
         }
-        
+
         echo "</CategoryList>";
 	}
-    
+
     public function enumerateCategoriesForStoreView($urlTemp, $frameworkType,
-                                                    $websiteId, $storeId, 
+                                                    $websiteId, $storeId,
                                                     $rootCatId, $storeViewId) {
         $messageToSend = "";
-        
+
         // Load in this root category and enumerate all children
         $collection = Mage::getModel($this->_collection)->getCollection()
             ->addAttributeToSelect("name");
-        
+
      // need to be able to link categories up to the right source/store in CU.
 
         $messageToSend .= "<CategoryList>
@@ -53,16 +53,16 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
             <WebsiteId><![CDATA[{$websiteId}]]></WebsiteId>
             <StoreId><![CDATA[{$storeId}]]></StoreId>
             <StoreviewId><![CDATA[{$storeViewId}]]></StoreviewId>\n";
-            
+
         foreach ($collection as $category) {
-        	
+
         //	$children = $category->getChildren();
         	$pid = $category->getData('parent_id');
         	$lvl = $category->getData('level');
         //	$childCount = $children->count();
-        		
+
 	            $catPathTemp = $category->getData('path');
-	            
+
 	            if (strpos($catPathTemp, "$rootCatId/") === 0     // start of path
 	                || strpos($catPathTemp, "/$rootCatId/") > 0   // middle of path
 	                || strpos($catPathTemp, "/$rootCatId") == (strlen($catPathTemp)-strlen("/$rootCatId")) ) // OR at END of path
@@ -75,65 +75,65 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
 	                $messageToSend .= "  <ParentID><![CDATA[{$category->getData('parent_id')}]]></ParentID>\n";
 	                $messageToSend .= "  <Level><![CDATA[{$category->getData('level')}]]></Level>\n";
 	                $messageToSend .= "</Category>\n\n";
-	                
+
 	            }
-        	
+
         }
-        
+
         $messageToSend .= "</CategoryList>";
-        
+
         return $messageToSend;
     }
-    
+
 	public function postCategoriesToCU($urlTemp) {
         $messageToSend = '';
         Mage::app()->setCurrentStore(Mage_Core_Model_App::ADMIN_STORE_ID);
-        
+
         $websites = Mage::app()->getWebsites();
-        
-		$putData = tmpfile(); 
+
+		$putData = tmpfile();
 		$bytes = 0;
-				
+
         // For each store view ...
         foreach ($websites as $website) {
-            
+
             $stores = Mage::getModel('core/store_group')
             ->getCollection()->addFieldToFilter('website_id', array('eq' => $website->getData('website_id')));
-            
+
             foreach ($stores as $store) {
-                
+
                 // Get the root category ID ...
 
                 $rootCatId = $store->getData('root_category_id');
-                
+
                 $storeViews = Mage::getModel('core/store')
                 ->getCollection()->addFieldToFilter('website_id', array('eq' => $website->getData('website_id')))
                 ->addFieldToFilter('group_id', array('eq' => $store->getData('group_id')));
-                
+
                 foreach ($storeViews as $storeView) {
-                    
+
                     $frameworkType = "Magento";
                     $websiteId = $storeView->getData('website_id');
                     $storeId = $storeView->getData('group_id');
                     $storeViewId = $storeView->getData('store_id');
-                    
+
                     $messageToSend = $this->enumerateCategoriesForStoreView($urlTemp, $frameworkType,
-                                                                             $websiteId, $storeId, 
+                                                                             $websiteId, $storeId,
                                                                              $rootCatId, $storeViewId);
-					
-					$bytes = $bytes + fwrite($putData, $messageToSend); 
-		
+
+					$bytes = $bytes + fwrite($putData, $messageToSend);
+
                 }
             }
         }
 		
-		fseek($putData, 0); 
+		fseek($putData, 0);
 		$senditnow = fread($putData, $bytes);
 	    $result = $this->postToChannelUnity($senditnow, "CategoryData");
         $xml = simplexml_load_string($result, 'SimpleXMLElement', LIBXML_NOCDATA);
-        
+
 		fclose($putData);
-			
+
         if (isset($xml->Status)) {
             return $xml->Status;
         }
@@ -146,5 +146,3 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
     }
 
 }
-
-?>

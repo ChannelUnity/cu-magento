@@ -136,7 +136,7 @@ class Camiloo_Channelunity_Model_Abstract
 
         try 
         {
-            $xml = simplexml_load_string($result, 'SimpleXMLElement', LIBXML_NOCDATA);
+            $xmlResult = simplexml_load_string($result, 'SimpleXMLElement', LIBXML_NOCDATA);
         }
         catch (Exception $e)
         {
@@ -144,14 +144,18 @@ class Camiloo_Channelunity_Model_Abstract
 
         }
         curl_close($session);
+		
+		if(!is_object($xmlResult)) {
+			$this->terminate('Error - Result XML was not loaded in verifypost()');
+		}
 
-        if ((string) $xml->Status != "OK"){			
-            $this->terminate($xml->Status);
+        if ((string) $xmlResult->Status != "OK"){			
+            $this->terminate($xmlResult->Status);
 
         }
         else
         {
-            return $xml;
+            return $xmlResult;
         }
     }
 
