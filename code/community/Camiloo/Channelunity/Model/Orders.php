@@ -86,10 +86,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         return $orderXml;
     }
 
-    public function generateCuXmlForOrderShip($order,
-                                              $carrierName,
-                                              $shipMethod,
-                                              $trackNumber) {
+    public function generateCuXmlForOrderShip($order, $carrierName, $shipMethod, $trackNumber) {
 
         $orderXml = $this->generateCuXmlForOrderStatus($order);
 

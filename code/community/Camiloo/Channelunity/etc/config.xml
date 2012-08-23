@@ -6,7 +6,7 @@
         </Camiloo_Channelunity>
     </modules>
     <frontend>
-	    <secure_url>
+        <secure_url>
             <channelunity_cronrun>/channelunity/cron/cronrun/</channelunity_cronrun>
         </secure_url>
         <routers>
@@ -28,32 +28,32 @@
     </frontend>
     <admin>
         <routers>
-			<channelunity>
-				<use>admin</use>
-				<args>
-					<module>Camiloo_Channelunity</module>
-					<frontName>channelunity</frontName>
-				</args>
-			</channelunity>
+            <channelunity>
+                <use>admin</use>
+                <args>
+                    <module>Camiloo_Channelunity</module>
+                    <frontName>channelunity</frontName>
+                </args>
+            </channelunity>
         </routers>
     </admin>
-    <adminhtml>	
+    <adminhtml>
         <menu>
-            
+
         </menu>
-		<acl>
-			<resources>
-				<admin>
-					<children>
- 					    
+        <acl>
+            <resources>
+                <admin>
+                    <children>
+
                     </children>
-				</admin>
-			</resources>
-			<resources>
-				<all>
-					<title>Allow Everything</title>
-				</all>
-        	    <admin>
+                </admin>
+            </resources>
+            <resources>
+                <all>
+                    <title>Allow Everything</title>
+                </all>
+                <admin>
                     <children>
                         <system>
                             <children>
@@ -68,16 +68,16 @@
                         </system>
                     </children>
                 </admin>
-			</resources>
-		</acl>
-		<layout>
-			<updates>
-				<channelunity>
-					<file>channelunity.xml</file>
-				</channelunity>
-			</updates>
-		</layout>
-    </adminhtml>   
+            </resources>
+        </acl>
+        <layout>
+            <updates>
+                <channelunity>
+                    <file>channelunity.xml</file>
+                </channelunity>
+            </updates>
+        </layout>
+    </adminhtml>
     <global>
         <models>
             <channelunity>
@@ -107,7 +107,6 @@
                     <use>core_read</use>
                 </connection>
             </channelunity_read>
-			
         </resources>
         <blocks>
             <channelunity>
@@ -127,9 +126,9 @@
                         <class>channelunity/observer</class>
                         <method>productWasSaved</method>
                     </channelunity>
-                </observers>			
-			</catalog_product_save_after>
-			<catalog_product_delete_before>
+                </observers>
+            </catalog_product_save_after>
+            <catalog_product_delete_before>
                 <observers>
                     <channelunity>
                         <type>model</type>
@@ -137,25 +136,15 @@
                         <method>productWasDeleted</method>
                     </channelunity>
                 </observers>
-			</catalog_product_delete_before>
-			<controller_action_postdispatch>
-                    <observers>
-
-                        <controller_action_after>
-
-                            <class>channelunity/observer</class>
-
- 
-                            <method>hookToControllerActionPostDispatch</method>
-
- 
- 
-                        </controller_action_after>
-
- 
-                    </observers>
-
-                </controller_action_postdispatch>
+            </catalog_product_delete_before>
+            <controller_action_postdispatch>
+                <observers>
+                    <controller_action_after>
+                        <class>channelunity/observer</class>
+                        <method>hookToControllerActionPostDispatch</method>
+                    </controller_action_after>
+                </observers>
+            </controller_action_postdispatch>
             <sales_order_place_after>
                 <observers>
                     <channelunity>
@@ -163,26 +152,26 @@
                         <class>channelunity/observer</class>
                         <method>orderWasPlaced</method>
                     </channelunity>
-                </observers>			
-			</sales_order_place_after>
-          	<sales_order_invoice_pay>
+                </observers>
+            </sales_order_place_after>
+            <sales_order_invoice_pay>
                 <observers>
                     <channelunity>
                         <type>model</type>
                         <class>channelunity/observer</class>
                         <method>onInvoicePaid</method>
                     </channelunity>
-                </observers>			
-			</sales_order_invoice_pay>
-			<sales_order_save_after>
-				<observers>
+                </observers>
+            </sales_order_invoice_pay>
+            <sales_order_save_after>
+                <observers>
                     <channelunity>
                         <type>model</type>
                         <class>channelunity/observer</class>
                         <method>checkForCancellation</method>
                     </channelunity>
-				</observers>				
-			</sales_order_save_after>
+                </observers>
+            </sales_order_save_after>
             <sales_order_shipment_track_save_after>
                 <observers>
                     <channelunity>
@@ -202,7 +191,7 @@
                 </observers>
             </sales_order_shipment_save_after>
             <catalog_category_prepare_save>
-                 <observers>
+                <observers>
                     <channelunity>
                         <type>model</type>
                         <class>channelunity/observer</class>
@@ -215,42 +204,42 @@
                     <channelunity>
                         <type>model</type>
                         <class>channelunity/observer</class>
-                        <method>categorySave</method>
+                        <method>categoryDelete</method>
                     </channelunity>
                 </observers>
             </catalog_controller_category_delete>
-           <core_config_data_save_after>
-               <observers>
-                   <channelunity>
-                       <type>model</type>
-                       <class>channelunity/observer</class>
-                       <method>configSaveAfter</method>
-                   </channelunity>
-               </observers>
-           </core_config_data_save_after>
-           <store_delete>
-               <observers>
-                   <channelunity>
-                       <type>model</type>
-                       <class>channelunity/observer</class>
-                       <method>storeDelete</method>
-                   </channelunity>
-               </observers>
-           </store_delete>
+            <core_config_data_save_after>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>configSaveAfter</method>
+                    </channelunity>
+                </observers>
+            </core_config_data_save_after>
+            <store_delete>
+                <observers>
+                    <channelunity>
+                        <type>model</type>
+                        <class>channelunity/observer</class>
+                        <method>storeDelete</method>
+                    </channelunity>
+                </observers>
+            </store_delete>
         </events>
     </global>
     <default>
-       <carriers>
-           <channelunitycustomrate>
-              <active>1</active>
-			  <show_on_frontend>0</show_on_frontend>
-              <show_on_backend>0</show_on_backend>
-              <model>channelunity/customrate</model>
-              <title>ChannelUnity Shipping</title>
-              <name>ChannelUnity Rate</name>
-           </channelunitycustomrate>
-       </carriers>
-       <payment>
+        <carriers>
+            <channelunitycustomrate>
+                <active>1</active>
+                <show_on_frontend>0</show_on_frontend>
+                <show_on_backend>0</show_on_backend>
+                <model>channelunity/customrate</model>
+                <title>ChannelUnity Shipping</title>
+                <name>ChannelUnity Rate</name>
+            </channelunitycustomrate>
+        </carriers>
+        <payment>
             <channelunitypayment>
                 <active>1</active>
                 <model>channelunity/payment</model>
@@ -259,6 +248,6 @@
                 <allowspecific>0</allowspecific>
                 <group>offline</group>
             </channelunitypayment>
-		</payment> 
-	</default>
+        </payment>
+    </default>
 </config>

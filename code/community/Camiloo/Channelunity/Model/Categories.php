@@ -126,7 +126,7 @@ class Camiloo_Channelunity_Model_Categories extends Camiloo_Channelunity_Model_A
                 }
             }
         }
-		
+
 		fseek($putData, 0);
 		$senditnow = fread($putData, $bytes);
 	    $result = $this->postToChannelUnity($senditnow, "CategoryData");
