@@ -345,7 +345,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 <CategoryDelete>
     <SourceURL>{$sourceUrl}</SourceURL>
     <DeletedCategoryId>{$categoryId}</DeletedCategoryId>
-</StoreDelete>
+</CategoryDelete>
 XML;
             // Send XML to CU
             $this->postToChannelUnity($xml, 'categoryDelete');
