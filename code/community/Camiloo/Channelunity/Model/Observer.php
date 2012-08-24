@@ -326,17 +326,29 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
     }
 
     /**
-     * Category is deleted. CU needs to know about it.
+     * Triggers on a category delete event. Removes category data in CU.
+     * @author Gary Lockett
+     *
+     * @param Varien_Event_Observer $observer
      */
     public function categoryDelete(Varien_Event_Observer $observer)
     {
         try {
 
-            // Send categories
-            Mage::getModel('channelunity/categories')->postCategoriesToCU(
-                    Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
-                    );
+            // Set variables
+            $sourceUrl = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
+            $categoryId = $observer->getEvent()->getControllerAction()
+                    ->getRequest()->getParam('id');
 
+            // Create XML
+            $xml = <<<XML
+<CategoryDelete>
+    <SourceURL>{$sourceUrl}</SourceURL>
+    <DeletedCategoryId>{$categoryId}</DeletedCategoryId>
+</StoreDelete>
+XML;
+            // Send XML to CU
+            $this->postToChannelUnity($xml, 'categoryDelete');
         } catch (Exception $e) {
             Mage::logException($e);
         }
