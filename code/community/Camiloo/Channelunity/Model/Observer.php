@@ -146,6 +146,17 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             $stores = Mage::app()->getStores();
             $keys   = array_keys($stores);
 
+            // Make sure the product exists in the first place
+            if ($skipProduct) {
+                $data = '<DeletedProductId>' . $product->getId()
+                            . '</DeletedProductId>';
+            }
+            else {
+                $data = Mage::getModel('channelunity/products')
+                    ->generateCuXmlForSingleProduct($product->getId(), 0);
+                $this->_updateProductData(0, $data);
+            }
+            
             // Loop through stores
             foreach ($keys as $i) {
 

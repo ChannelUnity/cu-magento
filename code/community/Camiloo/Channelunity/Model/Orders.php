@@ -179,7 +179,41 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 					// create the order as a guest.
 					$quote->setCustomerFirstname($this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)));
 					$quote->setCustomerLastname($this->fixEncoding($this->getLastName((string) $order->BillingInfo->Name)));
-					$quote->setCustomerEmail((string) $order->BillingInfo->Email);
+					
+					$customerEmail = (string) $order->BillingInfo->Email;
+					$bConvertBack = false; // change to true to get marketplace emails back
+					
+					if ($bConvertBack) {
+					    $serviceType = (string) $order->ServiceSku;
+                        switch ($serviceType) {
+                            case "CU_AMZ_UK":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.co.uk", $customerEmail);
+                                break;
+                            case "CU_AMZ_COM":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.com", $customerEmail);
+                                break;
+                            case "CU_AMZ_DE":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.de", $customerEmail);
+                                break;
+                            case "CU_AMZ_FR":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.fr", $customerEmail);
+                                break;
+                            case "CU_AMZ_CA":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.ca", $customerEmail);
+                                break;
+                            case "CU_AMZ_IT":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.it", $customerEmail);
+                                break;
+                            case "CU_AMZ_ES":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.es", $customerEmail);
+                                break;
+                            case "CU_AMZ_JP":
+                                $customerEmail = str_replace("@channelunity.com", "@marketplace.amazon.co.jp", $customerEmail);
+                                break;
+                        }
+					}
+					
+					$quote->setCustomerEmail($customerEmail);
 					$quote->setCustomerIsGuest(1);
                 }
             }
@@ -235,6 +269,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     $item->setData('qty', (string) $orderitem->Quantity);
                     $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
                     $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
+               //     $item->setQtyInvoiced((string) $orderitem->Quantity);
 
                     $quote->addItem($item);
 
@@ -293,6 +328,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                         $item->setData('qty', (string) $orderitem->Quantity);
                         $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
                         $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
+                       // $item->setQtyInvoiced((string) $orderitem->Quantity);
                         $quote->addItem($item);
 
                         $quote->save();
@@ -311,49 +347,102 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $regionModel = Mage::getModel('directory/region')->loadByCode((string) $order->ShippingInfo->State, (string) $order->ShippingInfo->Country);
             $regionId = is_object($regionModel) ? $regionModel->getId() : ((string) $order->ShippingInfo->State);
 
-			// set the billing address
-			$billingAddressData = array(
-                'firstname' => $this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)),
-                'lastname' => $this->fixEncoding($this->getLastName((string) $order->BillingInfo->Name)),
-                'email' =>  (string) $order->BillingInfo->Email,
-                'telephone' => ( (string) $order->BillingInfo->PhoneNumber == "" ?
-                                (string) $order->ShippingInfo->PhoneNumber :
-                                (string) $order->BillingInfo->PhoneNumber),
+            if (!empty($order->ShippingInfo->Address1)
+                && !empty($order->ShippingInfo->Address2)
+                && ((string) $order->ServiceSku) == "CU_AMZ_DE") {
+                
+                // set the billing address
+                $billingAddressData = array(
+                    'firstname' => $this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)),
+                    'lastname' => $this->fixEncoding($this->getLastName((string) $order->BillingInfo->Name)),
+                    'email' =>  (string) $order->BillingInfo->Email,
+                    'telephone' => ( (string) $order->BillingInfo->PhoneNumber == "" ?
+                                    (string) $order->ShippingInfo->PhoneNumber :
+                                    (string) $order->BillingInfo->PhoneNumber),
+                    'company' => (string) $this->fixEncoding((string) $order->ShippingInfo->Address1),
+                    'street' =>  (string) $this->fixEncoding(
+                        (string) $order->ShippingInfo->Address2
+                        ."\n".(string) $order->ShippingInfo->Address3),
+                    'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
+                    'postcode' =>  $postcode,
+                    'region' =>  (string) $order->ShippingInfo->State,
+                    'region_id' =>  $regionId,
+                    'country_id' =>  (string) $order->ShippingInfo->Country,
+                    'should_ignore_validation' => true
+                );
 
-            'street' =>  (string) $this->fixEncoding((string) $order->ShippingInfo->Address1."\n"
-                .(string) $order->ShippingInfo->Address2
-                ."\n".(string) $order->ShippingInfo->Address3),
-			'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
-			'postcode' =>  $postcode,
-			'region' =>  (string) $order->ShippingInfo->State,
-			'region_id' =>  $regionId,
-			'country_id' =>  (string) $order->ShippingInfo->Country,
-			'should_ignore_validation' => true
-			);
+                // add the billing address to the quote.
+                $billingAddress = $quote->getBillingAddress()->addData($billingAddressData);
+    
+                echo "<Info>Set Shipping Address</Info>";
+    
+                // set the shipping address
+                $shippingAddressData = array(
+                    'firstname' => $this->fixEncoding($this->getFirstName((string) $order->ShippingInfo->RecipientName)),
+                    'lastname' => $this->fixEncoding($this->getLastName((string) $order->ShippingInfo->RecipientName)),
+                    'company' => (string) $this->fixEncoding((string) $order->ShippingInfo->Address1),
+                    'street' =>  (string) $this->fixEncoding(
+                        (string) $order->ShippingInfo->Address2
+                        ."\n".(string) $order->ShippingInfo->Address3),
+                    'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
+                    'postcode' => $postcode,
+                    'region' =>  (string) $order->ShippingInfo->State,
+                    'region_id' => $regionId,
+                    'country_id' =>  (string) $order->ShippingInfo->Country,
+                    'telephone' =>  (string) $order->ShippingInfo->PhoneNumber,
+                    'should_ignore_validation' => true
+                );
 
-	 		// add the billing address to the quote.
-			$billingAddress = $quote->getBillingAddress()->addData($billingAddressData);
+            }
+            else {
+                    
+                // set the billing address
+                $billingAddressData = array(
+                    'firstname' => $this->fixEncoding($this->getFirstName((string) $order->BillingInfo->Name)),
+                    'lastname' => $this->fixEncoding($this->getLastName((string) $order->BillingInfo->Name)),
+                    'email' =>  (string) $order->BillingInfo->Email,
+                    'telephone' => ( (string) $order->BillingInfo->PhoneNumber == "" ?
+                                    (string) $order->ShippingInfo->PhoneNumber :
+                                    (string) $order->BillingInfo->PhoneNumber),
+    
+                'street' =>  (string) $this->fixEncoding((string) $order->ShippingInfo->Address1."\n"
+                    .(string) $order->ShippingInfo->Address2
+                    ."\n".(string) $order->ShippingInfo->Address3),
+                'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
+                'postcode' =>  $postcode,
+                'region' =>  (string) $order->ShippingInfo->State,
+                'region_id' =>  $regionId,
+                'country_id' =>  (string) $order->ShippingInfo->Country,
+                'should_ignore_validation' => true
+                );
 
-			echo "<Info>Set Shipping Address</Info>";
+                    
+                // add the billing address to the quote.
+                $billingAddress = $quote->getBillingAddress()->addData($billingAddressData);
+    
+                echo "<Info>Set Shipping Address</Info>";
+    
+                // set the shipping address
+                $shippingAddressData = array(
+                    'firstname' => $this->fixEncoding($this->getFirstName((string) $order->ShippingInfo->RecipientName)),
+                    'lastname' => $this->fixEncoding($this->getLastName((string) $order->ShippingInfo->RecipientName)),
+                    'street' =>  (string) $this->fixEncoding((string) $order->ShippingInfo->Address1
+                         ."\n".(string) $order->ShippingInfo->Address2
+                         ."\n".(string) $order->ShippingInfo->Address3),
+                    'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
+                    'postcode' => $postcode,
+                    'region' =>  (string) $order->ShippingInfo->State,
+                    'region_id' => $regionId,
+                    'country_id' =>  (string) $order->ShippingInfo->Country,
+                    'telephone' =>  (string) $order->ShippingInfo->PhoneNumber,
+                    'should_ignore_validation' => true
+                );
 
-			// set the shipping address
-			$shippingAddressData = array(
-				'firstname' => $this->fixEncoding($this->getFirstName((string) $order->ShippingInfo->RecipientName)),
-				'lastname' => $this->fixEncoding($this->getLastName((string) $order->ShippingInfo->RecipientName)),
-				'street' =>  (string) $this->fixEncoding((string) $order->ShippingInfo->Address1
-                     ."\n".(string) $order->ShippingInfo->Address2
-                     ."\n".(string) $order->ShippingInfo->Address3),
-				'city' =>  $this->fixEncoding((string) $order->ShippingInfo->City),
-				'postcode' => $postcode,
-				'region' =>  (string) $order->ShippingInfo->State,
-				'region_id' => $regionId,
-				'country_id' =>  (string) $order->ShippingInfo->Country,
-				'telephone' =>  (string) $order->ShippingInfo->PhoneNumber,
-				'should_ignore_validation' => true
-			);
-
+            }
+            
+            
             Mage::getSingleton('core/session')->setShippingPrice(
-                ((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
+                $this->getDeTaxPrice((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
 
 			// add the shipping address to the quote.
 			$shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);

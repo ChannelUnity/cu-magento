@@ -12,8 +12,6 @@ $ii = $this->getMethod()->getInfoInstance();
     
 $order = Mage::getModel('sales/order')->load($ii->getData('parent_id'));
 
-   // print_r($order->getData());
-    
 $collection = Mage::getModel('sales/order_payment_transaction')->getCollection()
     ->setOrderFilter($order);
 
