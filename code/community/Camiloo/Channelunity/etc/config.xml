@@ -199,15 +199,6 @@
                     </channelunity>
                 </observers>
             </catalog_category_prepare_save>
-            <catalog_controller_category_delete>
-                <observers>
-                    <channelunity>
-                        <type>model</type>
-                        <class>channelunity/observer</class>
-                        <method>categoryDelete</method>
-                    </channelunity>
-                </observers>
-            </catalog_controller_category_delete>
             <core_config_data_save_after>
                 <observers>
                     <channelunity>
