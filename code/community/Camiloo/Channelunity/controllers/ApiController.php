@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ChannelUnity connector for Magento Commerce
  *
@@ -9,23 +10,28 @@
  */
 class Camiloo_Channelunity_ApiController extends Mage_Core_Controller_Front_Action
 {
-    private function terminate($message) {
+
+    private function terminate($message)
+    {
 
         echo '<?xml version="1.0" encoding="utf-8" ?>';
         echo '	<ChannelUnity>';
-        echo '        <Status>'.$message.'</Status>';
+        echo '        <Status>' . $message . '</Status>';
         echo '  </ChannelUnity>';
         die;
     }
 
-	public function testtableAction() {
-		if (Mage::getModel('channelunity/orders')->table_exists("moo")) {
-			echo "true";
-		} else {
-			echo "false";
-		}
-	}
-    public function ordertestAction() {
+    public function testtableAction()
+    {
+        if (Mage::getModel('channelunity/orders')->table_exists("moo")) {
+            echo "true";
+        } else {
+            echo "false";
+        }
+    }
+
+    public function ordertestAction()
+    {
 
         $xml = <<<EOD
 <?xml version="1.0" encoding="utf-8" ?><ChannelUnity><Notification><ID>1334834111876</ID><Timestamp>Thu Apr 19 12:15:11 BST 2012</Timestamp><Type>OrderNotification</Type><Payload><MerchantName>marktest</MerchantName><SourceId>10</SourceId><FriendlyName>English</FriendlyName><URL>http://__.camiloo.co.uk/channelunity/api/index</URL><MainCountry>United Kingdom</MainCountry><FrameworkType>Magento</FrameworkType><WebsiteId>1</WebsiteId><StoreId>1</StoreId><StoreviewId>1</StoreviewId><SubscriptionId>304</SubscriptionId><SkuAttribute>sku</SkuAttribute><Orders>
@@ -76,10 +82,10 @@ EOD;
         $this->doApiProcess($xml, true);
     }
 
-    public function doApiProcess($xml, $testMode = false) {
+    public function doApiProcess($xml, $testMode = false)
+    {
 
-       // print_r($xml);die;
-
+        // print_r($xml);die;
         // load the XML into the simplexml parser
         $xml = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
 
@@ -108,12 +114,10 @@ EOD;
 
             if ($payload != '') {
                 $request = Mage::getModel('channelunity/products')->verifypost($payload);
-            }
-            else {
+            } else {
                 $request = "";
             }
-        }
-        else {
+        } else {
             $request = $xml->Notification->Payload;
         }
         // RequestHeader contains the request type. Lets find out what type of request
@@ -129,7 +133,7 @@ EOD;
 
         echo '<?xml version="1.0" encoding="utf-8" ?>';
         echo '	<ChannelUnity>';
-        echo '    <RequestType>'.$type.'</RequestType>';
+        echo '    <RequestType>' . $type . '</RequestType>';
 
         switch ($type) {
 
@@ -171,30 +175,29 @@ EOD;
                 <ProductAttributeStatus>$attributeStatus</ProductAttributeStatus>";
 
                 break;
-
         }
 
         echo '  </ChannelUnity>';
     }
 
     /**
-   	*	This is the main API beacon for the connector module
-	*	It will verify the request then pass it onto the model.
-	**/
-	public function indexAction() {
+     * 	This is the main API beacon for the connector module
+     * 	It will verify the request then pass it onto the model.
+     * */
+    public function indexAction()
+    {
 
-		$xml = $this->getRequest()->getPost('xml');
-		if (!isset($xml)) {
+        $xml = $this->getRequest()->getPost('xml');
+        if (!isset($xml)) {
 
-			$this->terminate("Error - could not find XML within request");
-
-		} else {
+            $this->terminate("Error - could not find XML within request");
+        } else {
             $xml = urldecode($xml);
 
             $this->doApiProcess($xml);
 
             die;
         }
-	}
+    }
 
 }

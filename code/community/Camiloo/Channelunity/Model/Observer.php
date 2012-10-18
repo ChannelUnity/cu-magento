@@ -45,19 +45,19 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 case 'adminhtml_catalog_product_action_attribute_save':
 
                     // Set variables
-                    $helper      = Mage::helper(
-                            'adminhtml/catalog_product_edit_action_attribute'
-                            );
+                    $helper = Mage::helper(
+                                    'adminhtml/catalog_product_edit_action_attribute'
+                    );
                     $storeViewId = $helper->getSelectedStoreId();
-                    $productIds  = $helper->getProductIds();
-                    $data        = '';
+                    $productIds = $helper->getProductIds();
+                    $data = '';
 
                     // Add products
                     foreach ($productIds as $id) {
                         $data .= Mage::getModel('channelunity/products')
                                 ->generateCuXmlForSingleProduct(
-                                        $id, $storeViewId
-                                        );
+                                $id, $storeViewId
+                        );
                     }
 
                     // Send to CU
@@ -68,12 +68,12 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
                     // Set variables
                     $storeViewId = Mage::helper(
-                            'adminhtml/catalog_product_edit_action_attribute'
+                                    'adminhtml/catalog_product_edit_action_attribute'
                             )
                             ->getSelectedStoreId();
-                    $data        = '<DeletedProductId>' . $observer->getEvent()
-                            ->getControllerAction()->getRequest()
-                            ->getParam('id') . '</DeletedProductId>';
+                    $data = '<DeletedProductId>' . $observer->getEvent()
+                                    ->getControllerAction()->getRequest()
+                                    ->getParam('id') . '</DeletedProductId>';
 
                     // Send to CU
                     $this->_updateProductData($storeViewId, $data);
@@ -83,23 +83,23 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
                     // Check for product ids
                     $productIds = $observer->getEvent()->getControllerAction()
-                            ->getRequest()->getParam('product');
+                                    ->getRequest()->getParam('product');
                     if (!is_array($productIds) || !count($productIds)) {
                         break;
                     }
 
                     // Set variables
                     $storeViewId = Mage::helper(
-                            'adminhtml/catalog_product_edit_action_attribute'
+                                    'adminhtml/catalog_product_edit_action_attribute'
                             )
                             ->getSelectedStoreId();
-                    $data        = '';
+                    $data = '';
 
                     // Add product data
                     foreach ($productIds as $id) {
 
                         // Load product
-                        $product     = Mage::getModel('catalog/product')
+                        $product = Mage::getModel('catalog/product')
                                 ->load($id);
                         $skipProduct = Mage::getModel('channelunity/products')
                                 ->skipProduct($product);
@@ -111,10 +111,9 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                         } else {
                             $data .= Mage::getModel('channelunity/products')
                                     ->generateCuXmlForSingleProduct(
-                                            $id, $storeViewId
-                                            );
+                                    $id, $storeViewId
+                            );
                         }
-
                     }
 
                     // Send to CU
@@ -124,7 +123,6 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 default:
                     break;
             }
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -138,25 +136,24 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
         try {
 
             // Load product
-            $product     = $observer->getEvent()->getProduct();
+            $product = $observer->getEvent()->getProduct();
             $skipProduct = Mage::getModel('channelunity/products')
                     ->skipProduct($product);
 
             // Set variables
             $stores = Mage::app()->getStores();
-            $keys   = array_keys($stores);
+            $keys = array_keys($stores);
 
             // Make sure the product exists in the first place
             if ($skipProduct) {
                 $data = '<DeletedProductId>' . $product->getId()
-                            . '</DeletedProductId>';
-            }
-            else {
+                        . '</DeletedProductId>';
+            } else {
                 $data = Mage::getModel('channelunity/products')
-                    ->generateCuXmlForSingleProduct($product->getId(), 0);
+                        ->generateCuXmlForSingleProduct($product->getId(), 0);
                 $this->_updateProductData(0, $data);
             }
-            
+
             // Loop through stores
             foreach ($keys as $i) {
 
@@ -168,14 +165,13 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                 } else {
                     $data = Mage::getModel('channelunity/products')
                             ->generateCuXmlForSingleProduct(
-                                    $product->getId(), $storeViewId
-                                    );
+                            $product->getId(), $storeViewId
+                    );
                 }
 
                 // Send to CU
                 $this->_updateProductData($storeViewId, $data);
             }
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -193,12 +189,11 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
             // Set variables
             $storeViewId = $product->getStoreId();
-            $data        = '<DeletedProductId>' . $product->getId()
+            $data = '<DeletedProductId>' . $product->getId()
                     . '</DeletedProductId>';
 
             // Send to CU
             $this->_updateProductData($storeViewId, $data);
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -213,12 +208,10 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
             // Update order products
             $this->_updateOrderProducts($observer->getEvent()->getOrder());
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
     }
-
 
     /**
      * Called on an invoice being paid. Stock levels are updated on CU.
@@ -229,7 +222,6 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
             // Update order products
             $this->_updateOrderProducts($observer->getInvoice()->getOrder());
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -251,7 +243,6 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
             // Send XML to CU
             $this->postToChannelUnity($xml, 'OrderStatusUpdate');
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -265,8 +256,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
         try {
 
             // Set variables
-            $track   = $observer->getEvent()->getTrack();
-            $order   = $track->getShipment()->getOrder();
+            $track = $observer->getEvent()->getTrack();
+            $order = $track->getShipment()->getOrder();
             $carrier = $track->getCarrierCode();
 
             // Check carrier
@@ -277,11 +268,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             // Create XML
             $xml = Mage::getModel('channelunity/orders')
                     ->generateCuXmlForOrderShip(
-                            $order,
-                            $carrier,
-                            $track->getTitle(),
-                            $track->getNumber()
-                            );
+                    $order, $carrier, $track->getTitle(), $track->getNumber()
+            );
             // Send XML to CU
             if (!empty($xml)) {
                 $result = $this->postToChannelUnity($xml, 'OrderStatusUpdate');
@@ -289,7 +277,6 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             } else {
                 Mage::log('Nothing to ship');
             }
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -301,7 +288,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
 
             // Set variables
             $shipment = $observer->getEvent()->getShipment();
-            $order    = $shipment->getOrder();
+            $order = $shipment->getOrder();
 
             // Create XML
             $xml = Mage::getModel('channelunity/orders')
@@ -313,7 +300,6 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             } else {
                 Mage::log('Nothing to ship');
             }
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -329,8 +315,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             // Send categories
             Mage::getModel('channelunity/categories')->postCategoriesToCU(
                     Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB)
-                    );
-
+            );
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -349,7 +334,7 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
             // Set variables
             $sourceUrl = Mage::getBaseUrl(Mage_Core_Model_Store::URL_TYPE_WEB);
             $categoryId = $observer->getEvent()->getControllerAction()
-                    ->getRequest()->getParam('id');
+                            ->getRequest()->getParam('id');
 
             // Create XML
             $xml = <<<XML
@@ -381,7 +366,6 @@ XML;
             // Send to CU
             Mage::getModel('channelunity/products')
                     ->postMyURLToChannelUnity($merchant);
-
         } catch (Exception $e) {
 
             Mage::logException($e);
@@ -420,19 +404,17 @@ XML;
         }
     }
 
-
     /**
      * PRIVATE METHODS
      */
-
     private function _updateOrderProducts($order)
     {
         try {
 
             // Set variables
-            $items       = $order->getAllItems();
+            $items = $order->getAllItems();
             $storeViewId = $order->getStore()->getId();
-            $data        = '';
+            $data = '';
 
             // Loop through items
             foreach ($items as $item) {
@@ -447,14 +429,12 @@ XML;
                 // Add XML
                 $data .= Mage::getModel('channelunity/products')
                         ->generateCuXmlForSingleProduct(
-                                $product->getId(), $storeViewId, 0
-                                );
-
+                        $product->getId(), $storeViewId, 0
+                );
             }
 
             // Send to CU
             $this->_updateProductData($storeViewId, $data);
-
         } catch (Exception $e) {
             Mage::logException($e);
         }
@@ -476,4 +456,5 @@ XML;
         // Send XML to CU
         return $this->postToChannelUnity($xml, 'ProductData');
     }
+
 }

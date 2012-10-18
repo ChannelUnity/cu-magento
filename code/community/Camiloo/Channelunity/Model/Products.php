@@ -583,11 +583,8 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
         $sql = $collectionOfProduct->getSelect();
 
         $result = Mage::getSingleton('core/resource_iterator')->walk(
-                $sql,
-                array(array($this, 'generateCuXmlSku')),
-                array('storeId' => 0),
-                $collectionOfProduct->getSelect()->getAdapter()
-                );
+                $sql, array(array($this, 'generateCuXmlSku')), array('storeId' => 0), $collectionOfProduct->getSelect()->getAdapter()
+        );
     }
 
     /**

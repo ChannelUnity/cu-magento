@@ -1,6 +1,7 @@
 <?php
+
 /**
- * ChannelUnity connector for Magento Commerce 
+ * ChannelUnity connector for Magento Commerce
  *
  * @category   Camiloo
  * @package    Camiloo_Channelunity
@@ -9,6 +10,7 @@
  */
 class Camiloo_Channelunity_Block_Paymentinfo extends Mage_Payment_Block_Info_Cc
 {
+
     /**
      * Internal constructor
      *
@@ -17,8 +19,8 @@ class Camiloo_Channelunity_Block_Paymentinfo extends Mage_Payment_Block_Info_Cc
     protected function _construct()
     {
         parent::_construct();
-        
-		// Set default template
+
+        // Set default template
         $this->setTemplate('channelunity/paymentinfo.phtml');
     }
 

@@ -1,4 +1,5 @@
 <?php
+
 /**
  * This code is backported from the Magento codebase at v1.4.0.0 to ensure
  * compatibility across Magento versions older than v1.4. Its v1.4 classname is
@@ -15,6 +16,7 @@
  */
 class Camiloo_Channelunity_Model_Ordercreatebackport
 {
+
     /**
      * Quote object
      *
@@ -43,8 +45,8 @@ class Camiloo_Channelunity_Model_Ordercreatebackport
      */
     public function __construct(Mage_Sales_Model_Quote $quote)
     {
-        $this->_quote       = $quote;
-        $this->_convertor   = Mage::getModel('sales/convert_quote');
+        $this->_quote = $quote;
+        $this->_convertor = Mage::getModel('sales/convert_quote');
     }
 
     /**
@@ -130,10 +132,10 @@ class Camiloo_Channelunity_Model_Ordercreatebackport
         /**
          * We can use configuration data for declare new order status
          */
-        Mage::dispatchEvent('checkout_type_onepage_save_order', array('order'=>$order, 'quote'=>$quote));
-        Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order'=>$order, 'quote'=>$quote));
+        Mage::dispatchEvent('checkout_type_onepage_save_order', array('order' => $order, 'quote' => $quote));
+        Mage::dispatchEvent('sales_model_service_quote_submit_before', array('order' => $order, 'quote' => $quote));
         $transaction->save();
-        Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order'=>$order, 'quote'=>$quote));
+        Mage::dispatchEvent('sales_model_service_quote_submit_after', array('order' => $order, 'quote' => $quote));
         return $order;
     }
 
@@ -150,11 +152,11 @@ class Camiloo_Channelunity_Model_Ordercreatebackport
             $addressValidation = $address->validate();
             if ($addressValidation !== true) {
                 Mage::throwException(
-                    $helper->__('Please check shipping address information. %s', implode(' ', $addressValidation))
+                        $helper->__('Please check shipping address information. %s', implode(' ', $addressValidation))
                 );
             }
-            $method= $address->getShippingMethod();
-            $rate  = $address->getShippingRateByCode($method);
+            $method = $address->getShippingMethod();
+            $rate = $address->getShippingRateByCode($method);
             if (!$this->getQuote()->isVirtual() && (!$method || !$rate)) {
                 Mage::throwException($helper->__('Please specify shipping method.'));
             }
@@ -163,7 +165,7 @@ class Camiloo_Channelunity_Model_Ordercreatebackport
         $addressValidation = $this->getQuote()->getBillingAddress()->validate();
         if ($addressValidation !== true) {
             Mage::throwException(
-                $helper->__('Please check billing address information. %s', implode(' ', $addressValidation))
+                    $helper->__('Please check billing address information. %s', implode(' ', $addressValidation))
             );
         }
 
@@ -172,4 +174,5 @@ class Camiloo_Channelunity_Model_Ordercreatebackport
         }
         return $this;
     }
+
 }

@@ -1,6 +1,7 @@
 <?php
+
 /**
- * ChannelUnity connector for Magento Commerce 
+ * ChannelUnity connector for Magento Commerce
  *
  * @category   Camiloo
  * @package    Camiloo_Channelunity
@@ -9,5 +10,5 @@
  */
 class Camiloo_Channelunity_Helper_Data extends Mage_Core_Helper_Data
 {
-   
+
 }

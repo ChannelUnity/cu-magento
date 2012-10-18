@@ -2,8 +2,7 @@
 
 $installer = $this;
 $installer->startSetup();
-    
-    
-$installer->endSetup(); 
 
+
+$installer->endSetup();
 ?>
