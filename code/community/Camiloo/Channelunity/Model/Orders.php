@@ -480,6 +480,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             echo "<Exception><![CDATA[" . $x->getMessage() . " " . $x->getTraceAsString() . "]]></Exception>";
             echo "<NotImported>" . ((string) $order->OrderId) . "</NotImported>";
             Mage::unregister('cu_order_in_progress');
+            if (is_object($newOrder)) {
+                $newOrder->delete();
+            }
             return;
         }
 
@@ -500,140 +503,145 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
         }
 
-        // This order will have been paid for, otherwise it won't
-        // have imported
+            try {
 
-        $invoiceId = Mage::getModel('sales/order_invoice_api')
-                ->create($newOrder->getIncrementId(), array());
+            // This order will have been paid for, otherwise it won't
+            // have imported
 
-        $invoice = Mage::getModel('sales/order_invoice')
-                ->loadByIncrementId($invoiceId);
+            $invoiceId = Mage::getModel('sales/order_invoice_api')
+                    ->create($newOrder->getIncrementId(), array());
 
-        /**
-         * Pay invoice
-         * i.e. the invoice state is now changed to 'Paid'
-         */
-        $invoice->capture()->save();
-        Mage::dispatchEvent('sales_order_invoice_pay', array('invoice' => $invoice));
+            $invoice = Mage::getModel('sales/order_invoice')
+                    ->loadByIncrementId($invoiceId);
 
-        $newOrder->setTotalPaid($newOrder->getGrandTotal());
-        $newOrder->setBaseTotalPaid($newOrder->getBaseGrandTotal());
+            /**
+             * Pay invoice
+             * i.e. the invoice state is now changed to 'Paid'
+             */
+            $invoice->capture()->save();
+            Mage::dispatchEvent('sales_order_invoice_pay', array('invoice' => $invoice));
 
-        /** Make a transaction to store CU info */
-        $transaction = Mage::getModel('sales/order_payment_transaction');
-        $transaction->setOrderPaymentObject($newOrder->getPayment());
-        $transaction->setOrder($newOrder);
-        $transaction->setTxnType('capture');
-        $transaction->setTxnId((string) $order->OrderId);
-        $transaction->setAdditionalInformation('SubscriptionId', (string) $dataArray->SubscriptionId);
-        $transaction->setAdditionalInformation('RemoteOrderID', (string) $order->OrderId);
-        $transaction->setAdditionalInformation('ShippingService', (string) $order->ShippingInfo->Service);
+            $newOrder->setTotalPaid($newOrder->getGrandTotal());
+            $newOrder->setBaseTotalPaid($newOrder->getBaseGrandTotal());
 
-        $serviceType = (string) $order->ServiceSku;
-        switch ($serviceType) {
-            case "CU_AMZ_UK":
-                $serviceType = "Amazon.co.uk";
-                break;
-            case "CU_AMZ_COM":
-                $serviceType = "Amazon.com";
-                break;
-            case "CU_AMZ_DE":
-                $serviceType = "Amazon.de";
-                break;
-            case "CU_AMZ_FR":
-                $serviceType = "Amazon.fr";
-                break;
-            case "CU_AMZ_CA":
-                $serviceType = "Amazon.ca";
-                break;
-            case "CU_AMZ_IT":
-                $serviceType = "Amazon.it";
-                break;
-            case "CU_AMZ_ES":
-                $serviceType = "Amazon.es";
-                break;
-            case "CU_AMZ_JP":
-                $serviceType = "Amazon.co.jp";
-                break;
-        }
+            /** Make a transaction to store CU info */
+            $transaction = Mage::getModel('sales/order_payment_transaction');
+            $transaction->setOrderPaymentObject($newOrder->getPayment());
+            $transaction->setOrder($newOrder);
+            $transaction->setTxnType('capture');
+            $transaction->setTxnId((string) $order->OrderId);
+            $transaction->setAdditionalInformation('SubscriptionId', (string) $dataArray->SubscriptionId);
+            $transaction->setAdditionalInformation('RemoteOrderID', (string) $order->OrderId);
+            $transaction->setAdditionalInformation('ShippingService', (string) $order->ShippingInfo->Service);
 
-        $transaction->setAdditionalInformation('ServiceType', $serviceType);
+            $serviceType = (string) $order->ServiceSku;
+            switch ($serviceType) {
+                case "CU_AMZ_UK":
+                    $serviceType = "Amazon.co.uk";
+                    break;
+                case "CU_AMZ_COM":
+                    $serviceType = "Amazon.com";
+                    break;
+                case "CU_AMZ_DE":
+                    $serviceType = "Amazon.de";
+                    break;
+                case "CU_AMZ_FR":
+                    $serviceType = "Amazon.fr";
+                    break;
+                case "CU_AMZ_CA":
+                    $serviceType = "Amazon.ca";
+                    break;
+                case "CU_AMZ_IT":
+                    $serviceType = "Amazon.it";
+                    break;
+                case "CU_AMZ_ES":
+                    $serviceType = "Amazon.es";
+                    break;
+                case "CU_AMZ_JP":
+                    $serviceType = "Amazon.co.jp";
+                    break;
+            }
 
-        // get order flags so we know whether it's an FBA order
-        if (isset($order->OrderFlags) && ( ((string) $order->OrderFlags) == "AMAZON_FBA")) {
+            $transaction->setAdditionalInformation('ServiceType', $serviceType);
 
-            $transaction->setAdditionalInformation('AmazonFBA', 'Yes');
-            // Can't set 'complete' state manually - ideally import tracking info and create shipment in Mage
+            // get order flags so we know whether it's an FBA order
+            if (isset($order->OrderFlags) && ( ((string) $order->OrderFlags) == "AMAZON_FBA")) {
+
+                $transaction->setAdditionalInformation('AmazonFBA', 'Yes');
+                // Can't set 'complete' state manually - ideally import tracking info and create shipment in Mage
 
 
-            $newOrder->setData('state', 'complete');
-            $newOrder->setStatus('complete');
-            $history = $newOrder->addStatusHistoryComment('Order was fulfilled by Amazon', false);
-            $history->setIsCustomerNotified(false);
-        }
-        $transaction->save();
+                $newOrder->setData('state', 'complete');
+                $newOrder->setStatus('complete');
+                $history = $newOrder->addStatusHistoryComment('Order was fulfilled by Amazon', false);
+                $history->setIsCustomerNotified(false);
+            }
+            $transaction->save();
 
-        /** Add gift message */
-        if (isset($order->ShippingInfo->GiftMessage)) {
+            /** Add gift message */
+            if (isset($order->ShippingInfo->GiftMessage)) {
 
-            $message = Mage::getModel('giftmessage/message');
+                $message = Mage::getModel('giftmessage/message');
 
-            $message->setMessage($order->ShippingInfo->GiftMessage);
-            $message->save();
+                $message->setMessage($order->ShippingInfo->GiftMessage);
+                $message->save();
 
-            $gift_message_id = $message->getId();
+                $gift_message_id = $message->getId();
 
-            $newOrder->setData('gift_message_id', $gift_message_id);
-        }
+                $newOrder->setData('gift_message_id', $gift_message_id);
+            }
 
-        $newOrder->setCreatedAt((string) $order->PurchaseDate);
+            $newOrder->setCreatedAt((string) $order->PurchaseDate);
 
-        //================ Add custom options where applicable ============
-        $allItems = $newOrder->getAllItems();
-        foreach ($allItems as $item) {
-            if (isset($itemOptions[$item->getSku()])) {
-                $optionsToAdd = $itemOptions[$item->getSku()];
+            //================ Add custom options where applicable ============
+            $allItems = $newOrder->getAllItems();
+            foreach ($allItems as $item) {
+                if (isset($itemOptions[$item->getSku()])) {
+                    $optionsToAdd = $itemOptions[$item->getSku()];
 
-                $optionArray = array();
+                    $optionArray = array();
 
-                foreach ($optionsToAdd as $customSkuToAdd) {
-                    $productTemp = Mage::getModel('catalog/product')->load($item->getProductId());
+                    foreach ($optionsToAdd as $customSkuToAdd) {
+                        $productTemp = Mage::getModel('catalog/product')->load($item->getProductId());
 
-                    $tempOption = $productTemp->getOptions();
-                    foreach ($tempOption as $option) {
-                        $temp = $option->getData();
+                        $tempOption = $productTemp->getOptions();
+                        foreach ($tempOption as $option) {
+                            $temp = $option->getData();
 
-                        $values = $option->getValues();
-                        if (count($values) > 0) {
-                            foreach ($values as $value) {
+                            $values = $option->getValues();
+                            if (count($values) > 0) {
+                                foreach ($values as $value) {
 
-                                if ($value["sku"] == $customSkuToAdd) {
+                                    if ($value["sku"] == $customSkuToAdd) {
 
-                                    echo "<Info>Add custom option: $customSkuToAdd</Info>";
+                                        echo "<Info>Add custom option: $customSkuToAdd</Info>";
 
-                                    $optionArray[count($optionArray)]
-                                            = array(
-                                        'label' => $temp["default_title"],
-                                        'value' => $value["title"],
-                                        'print_value' => $value["title"],
-                                        'option_type' => 'radio',
-                                        'custom_view' => false,
-                                        'option_id' => $temp["option_id"],
-                                        'option_value' => $value->getId()
-                                    );
+                                        $optionArray[count($optionArray)]
+                                                = array(
+                                            'label' => $temp["default_title"],
+                                            'value' => $value["title"],
+                                            'print_value' => $value["title"],
+                                            'option_type' => 'radio',
+                                            'custom_view' => false,
+                                            'option_id' => $temp["option_id"],
+                                            'option_value' => $value->getId()
+                                        );
+                                    }
                                 }
                             }
                         }
                     }
+
+                    $item->setProductOptions(array('options' => $optionArray
+                    ));
+
+                    $item->save();
                 }
-
-                $item->setProductOptions(array('options' => $optionArray
-                ));
-
-                $item->save();
             }
+            $newOrder->save();
+        } catch (Exception $e) {
+            $newOrder->delete();
         }
-        $newOrder->save();
 
         Mage::unregister('cu_order_in_progress');
     }
@@ -799,11 +807,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
     {
         foreach ($dataArray->Orders->Order as $order) {
 
+            $orderId = trim((string) $order->OrderId);
+
             $bOrderExisted = false;
 
             try {
                 $transaction = Mage::getModel('sales/order_payment_transaction')
-                        ->loadByTxnId((string) $order->OrderId);
+                        ->loadByTxnId();
 
                 $newOrder = $transaction->getOrder();
                 if (is_object($newOrder)) {
@@ -815,7 +825,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
             // Additional information good for failsafe
             if (!$bOrderExisted) {
-                $oid = (string) $order->OrderId;
+                $oid = $orderId;
 
                 $transaction = Mage::getModel('sales/order_payment_transaction')->getCollection()
                                 ->addFieldToFilter('additional_information', array('like' => '%s:13:"RemoteOrderID";s:' . strlen($oid) . ':"' . $oid . '"%'))->getFirstItem();
@@ -831,7 +841,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 
             // See if the order has been imported by the old Amazon module
             if (!$bOrderExisted && $this->table_exists("{$table_prefix}amazonimport_flatorders")) {
-                $oid = (string) $order->OrderId;
+                $oid = $orderId;
                 $db = Mage::getSingleton("core/resource")->getConnection("core_write");
 
                 $_sql = "SELECT * FROM {$table_prefix}amazonimport_flatorders WHERE amazon_order_id='$oid'";
@@ -852,7 +862,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     // if the stock isn't already decreased, decrease it
 
                     if (!isset($order->StockReservedCart) || ((string) $order->StockReservedCart) == "0") {
-                        echo "<StockReserved>" . ((string) $order->OrderId) . "</StockReserved>";
+                        echo "<StockReserved>" . $orderId . "</StockReserved>";
 
                         if (!$orderIsFba || !$ignoreQty) {
                             $this->reserveStock($dataArray, $order);
@@ -862,8 +872,8 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     $this->doCreate($dataArray, $order);
                 } else if (((string) $order->OrderStatus) == "OnHold") {
                     // Reserve the stock
-                    echo "<Imported>" . ((string) $order->OrderId) . "</Imported>";
-                    echo "<StockReserved>" . ((string) $order->OrderId) . "</StockReserved>";
+                    echo "<Imported>" . $orderId . "</Imported>";
+                    echo "<StockReserved>" . $orderId . "</StockReserved>";
 
                     if (!$orderIsFba || !$ignoreQty) {
                         $this->reserveStock($dataArray, $order);
@@ -875,7 +885,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                         $this->doCreate($dataArray, $order);
                     } else {
                         // Have this order marked as imported anyway
-                        echo "<Imported>" . ((string) $order->OrderId) . "</Imported>";
+                        echo "<Imported>" . $orderId . "</Imported>";
                     }
                 }
             }
@@ -887,7 +897,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                         $this->releaseStock($dataArray, $order);
                     }
                 }
-                echo "<Imported>" . ((string) $order->OrderId) . "</Imported>";
+                echo "<Imported>" . $orderId . "</Imported>";
             }
         }
     }
