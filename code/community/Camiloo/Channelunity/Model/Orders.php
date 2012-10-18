@@ -640,7 +640,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
             $newOrder->save();
         } catch (Exception $e) {
-            $newOrder->delete();
+            if (is_object($newOrder)) {
+                $newOrder->delete();
+            }
         }
 
         Mage::unregister('cu_order_in_progress');
