@@ -142,7 +142,7 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                 $attrType = trim($attribute->getBackendType());
                 $friendlyName = trim($attribute->getFrontendLabel());
 
-                $messageToSend = "  <Attribute><Name>$attr</Name><Type>$attrType</Type>
+                $messageToSend = "<Attribute><Name>$attr</Name><Type>$attrType</Type>
                     <FriendlyName><![CDATA[{$friendlyName}]]></FriendlyName></Attribute>\n";
 
                 $bytes = $bytes + fwrite($putData, $messageToSend);
@@ -188,6 +188,7 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
             }
 
             $stock = Mage::getModel('cataloginventory/stock_item')->loadByProduct($product->getId());
+
             $qty = $stock->getData('qty') - $reduceStockBy;
 
             $catids = implode(',', $product->getCategoryIds());

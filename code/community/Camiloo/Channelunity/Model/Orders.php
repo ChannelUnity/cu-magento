@@ -845,13 +845,18 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 
             //=======================================================
             if (!$bOrderExisted) {
+                $orderIsFba = isset($order->OrderFlags) && (((string) $order->OrderFlags) == 'AMAZON_FBA');
+                $ignoreQty  = Mage::getStoreConfig('channelunityint/generalsettings/ignorefbaqty');
+
                 if (((string) $order->OrderStatus) == "Processing") {
                     // if the stock isn't already decreased, decrease it
 
                     if (!isset($order->StockReservedCart) || ((string) $order->StockReservedCart) == "0") {
                         echo "<StockReserved>" . ((string) $order->OrderId) . "</StockReserved>";
 
-                        $this->reserveStock($dataArray, $order);
+                        if (!$orderIsFba || !$ignoreQty) {
+                            $this->reserveStock($dataArray, $order);
+                        }
                     }
 
                     $this->doCreate($dataArray, $order);
@@ -860,7 +865,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                     echo "<Imported>" . ((string) $order->OrderId) . "</Imported>";
                     echo "<StockReserved>" . ((string) $order->OrderId) . "</StockReserved>";
 
-                    $this->reserveStock($dataArray, $order);
+                    if (!$orderIsFba || !$ignoreQty) {
+                        $this->reserveStock($dataArray, $order);
+                    }
                 } else {
                     // Let's not create cancelled orders !!! We don't have all the details
                     if ("Cancelled" != ((string) $order->OrderStatus)) {
@@ -876,7 +883,9 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             if ($bOrderExisted) {
                 if (((string) $order->OrderStatus) == "Cancelled") {
                     // Put back our stock
-                    $this->releaseStock($dataArray, $order);
+                    if (!$orderIsFba || !$ignoreQty) {
+                        $this->releaseStock($dataArray, $order);
+                    }
                 }
                 echo "<Imported>" . ((string) $order->OrderId) . "</Imported>";
             }

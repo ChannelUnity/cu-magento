@@ -111,8 +111,8 @@ class Camiloo_Channelunity_Model_Observer extends Camiloo_Channelunity_Model_Abs
                         } else {
                             $data .= Mage::getModel('channelunity/products')
                                     ->generateCuXmlForSingleProduct(
-                                    $id, $storeViewId
-                            );
+                                            $id, $storeViewId
+                                            );
                         }
                     }
 
