@@ -798,7 +798,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 
         $priceIncTax = Mage::getStoreConfig('channelunityint/generalsettings/priceinctax');
 
-        if ($priceIncTax == 0 || $taxRate == 0) {
+        if ($priceIncTax == 1 || $taxRate == 0) {
             return $price;
         } else {
             return $price / (100.0 + $taxRate) * 100.0;
