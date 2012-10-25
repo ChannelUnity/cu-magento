@@ -232,98 +232,6 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             echo "<ConversionRate>$reverseRate</ConversionRate>";
             $itemOptions = array();
 
-            // add product(s)
-            foreach ($order->OrderItems->Item as $orderitem) {
-                $product = Mage::getModel('catalog/product')->loadByAttribute(
-                        (string) $dataArray->SkuAttribute, (string) $orderitem->SKU);
-
-                // First check if this is a custom option
-                if (!is_object($product)) {
-                    $skuparts = explode("-", (string) $orderitem->SKU);
-
-                    if (count($skuparts) > 1) {
-                        $parentsku = $skuparts[0];
-
-                        $product = Mage::getModel('catalog/product')->loadByAttribute(
-                                (string) $dataArray->SkuAttribute, $parentsku);
-
-                        for ($i = 1; $i < count($skuparts); $i++) {
-                            $itemOptions[$parentsku][] = $skuparts[$i];
-                        }
-                    }
-                }
-                // ------------------------------------------------------
-
-                if (is_object($product)) {
-
-                    $product->setPrice($this->getDeTaxPrice((string) $orderitem->Price) / $reverseRate);
-
-                    $item = Mage::getModel('sales/quote_item');
-                    $item->setQuote($quote)->setProduct($product);
-                    $item->setData('qty', (string) $orderitem->Quantity);
-                    $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
-                    $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
-                    //     $item->setQtyInvoiced((string) $orderitem->Quantity);
-
-                    $quote->addItem($item);
-
-                    $quote->save();
-                    $item->save();
-                } else {
-                    echo "<Info>Can't find SKU to add to quote " . ((string) $orderitem->SKU)
-                    . ", trying to create stub</Info>";
-
-                    $prodIdToLoad = 0;
-
-                    try {
-                        // Create stub if needed
-                        $this->createStubProduct((string) $orderitem->SKU, (string) $orderitem->Name, (string) $dataArray->WebsiteId, (string) $order->OrderId, (string) $orderitem->Price, (string) $orderitem->Quantity, (string) $dataArray->SkuAttribute);
-                    } catch (Exception $e) {
-                        echo "<Info><![CDATA[Stub create error - " . $e->getMessage() . "]]></Info>";
-
-                        if (strpos($e->getMessage(), "Duplicate entry")) {
-
-                            $msgParts = explode("Duplicate entry '", $e->getMessage());
-
-                            if (isset($msgParts[1])) {
-
-                                $msgParts = $msgParts[1];
-                                $msgParts = explode("-", $msgParts);
-                                $prodIdToLoad = $msgParts[0];
-                            }
-                        }
-                    }
-
-                    if ($prodIdToLoad > 0) {
-
-                        echo "<Info>Load by ID $prodIdToLoad</Info>";
-                        $product = Mage::getModel('catalog/product')->load($prodIdToLoad);
-                    } else {
-
-                        // Try once again to add our item to the quote
-                        $product = Mage::getModel('catalog/product')->loadByAttribute('sku', (string) $orderitem->SKU);
-                    }
-
-                    if (is_object($product)) {
-
-                        $product->setPrice($this->getDeTaxPrice((string) $orderitem->Price) / $reverseRate);
-
-                        $item = Mage::getModel('sales/quote_item');
-                        $item->setQuote($quote)->setProduct($product);
-                        $item->setData('qty', (string) $orderitem->Quantity);
-                        $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
-                        $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price));
-                        // $item->setQtyInvoiced((string) $orderitem->Quantity);
-                        $quote->addItem($item);
-
-                        $quote->save();
-                        $item->save();
-                    } else {
-                        echo "<Info>Can't find SKU to add to quote " . ((string) $orderitem->SKU) . "</Info>";
-                    }
-                }
-            }
-
             echo "<Info>Set Billing Address</Info>";
 
             $postcode = $this->fixEncoding((string) $order->ShippingInfo->PostalCode);
@@ -420,6 +328,97 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 );
             }
 
+            // add product(s)
+            foreach ($order->OrderItems->Item as $orderitem) {
+                $product = Mage::getModel('catalog/product')->loadByAttribute(
+                        (string) $dataArray->SkuAttribute, (string) $orderitem->SKU);
+
+                // First check if this is a custom option
+                if (!is_object($product)) {
+                    $skuparts = explode("-", (string) $orderitem->SKU);
+
+                    if (count($skuparts) > 1) {
+                        $parentsku = $skuparts[0];
+
+                        $product = Mage::getModel('catalog/product')->loadByAttribute(
+                                (string) $dataArray->SkuAttribute, $parentsku);
+
+                        for ($i = 1; $i < count($skuparts); $i++) {
+                            $itemOptions[$parentsku][] = $skuparts[$i];
+                        }
+                    }
+                }
+                // ------------------------------------------------------
+
+                if (is_object($product)) {
+
+                    $product->setPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress) / $reverseRate);
+
+                    $item = Mage::getModel('sales/quote_item');
+                    $item->setQuote($quote)->setProduct($product);
+                    $item->setData('qty', (string) $orderitem->Quantity);
+                    $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
+                    $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
+                    //     $item->setQtyInvoiced((string) $orderitem->Quantity);
+
+                    $quote->addItem($item);
+
+                    $quote->save();
+                    $item->save();
+                } else {
+                    echo "<Info>Can't find SKU to add to quote " . ((string) $orderitem->SKU)
+                    . ", trying to create stub</Info>";
+
+                    $prodIdToLoad = 0;
+
+                    try {
+                        // Create stub if needed
+                        $this->createStubProduct((string) $orderitem->SKU, (string) $orderitem->Name, (string) $dataArray->WebsiteId, (string) $order->OrderId, (string) $orderitem->Price, (string) $orderitem->Quantity, (string) $dataArray->SkuAttribute);
+                    } catch (Exception $e) {
+                        echo "<Info><![CDATA[Stub create error - " . $e->getMessage() . "]]></Info>";
+
+                        if (strpos($e->getMessage(), "Duplicate entry")) {
+
+                            $msgParts = explode("Duplicate entry '", $e->getMessage());
+
+                            if (isset($msgParts[1])) {
+
+                                $msgParts = $msgParts[1];
+                                $msgParts = explode("-", $msgParts);
+                                $prodIdToLoad = $msgParts[0];
+                            }
+                        }
+                    }
+
+                    if ($prodIdToLoad > 0) {
+
+                        echo "<Info>Load by ID $prodIdToLoad</Info>";
+                        $product = Mage::getModel('catalog/product')->load($prodIdToLoad);
+                    } else {
+
+                        // Try once again to add our item to the quote
+                        $product = Mage::getModel('catalog/product')->loadByAttribute('sku', (string) $orderitem->SKU);
+                    }
+
+                    if (is_object($product)) {
+
+                        $product->setPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress) / $reverseRate);
+
+                        $item = Mage::getModel('sales/quote_item');
+                        $item->setQuote($quote)->setProduct($product);
+                        $item->setData('qty', (string) $orderitem->Quantity);
+                        $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
+                        $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
+                        // $item->setQtyInvoiced((string) $orderitem->Quantity);
+                        $quote->addItem($item);
+
+                        $quote->save();
+                        $item->save();
+                    } else {
+                        echo "<Info>Can't find SKU to add to quote " . ((string) $orderitem->SKU) . "</Info>";
+                    }
+                }
+            }
 
             Mage::getSingleton('core/session')->setShippingPrice(
                     $this->getDeTaxPrice((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
@@ -784,9 +783,59 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
         }
     }
+    
+    public function getSalesTaxRate($country, $region, $postcode) {
+        
+        $quote = Mage::getModel('sales/quote');
+        $shippingAddressData = array(
+                                     'country_id' => $country,
+                                     'region' => $region,
+                                     'postcode' => $postcode,
+                                     );
+        $shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
+        
+        $calc = Mage::getSingleton('tax/calculation');
+        $rr = $calc->getRateRequest($shippingAddress); 
+        
+        $rate = -1;
+        
+        $rates = $calc->getRatesForAllProductTaxClasses($rr);
+        
+        foreach ($rates as $class => $rate) {
+            
+            break;
+            
+        }
+        
+        return $rate;
+    }
 
-    public function getDeTaxPrice($price)
+    public function getDeTaxPrice($price, $address = null)
     {
+        $priceIncTax = Mage::getStoreConfig('channelunityint/generalsettings/priceinctax');
+           
+        if ($priceIncTax == 1) {
+            return $price;
+        }
+        
+        if ($address != null) {
+            
+            $cid = $address->getData('country_id');
+            $rgn = $address->getData('region');
+            $pcd = $address->getPostcode();
+            
+            if ($cid == 'US') {
+                // Look at state-specific sales taxes
+                
+                $rate = $this->getSalesTaxRate($cid, $rgn, $pcd);
+                
+                if ($rate > 1) {
+                    return $price / (100.0 + $rate) * 100.0;
+                }
+                
+            }
+        }
+        
         $taxRate = 1;
         $calc = Mage::getSingleton('tax/calculation');
         $rates = $calc->getRatesForAllProductTaxClasses($calc->getRateRequest());
@@ -796,9 +845,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             break;
         }
 
-        $priceIncTax = Mage::getStoreConfig('channelunityint/generalsettings/priceinctax');
-
-        if ($priceIncTax == 1 || $taxRate == 0) {
+        if ($taxRate == 0) {
             return $price;
         } else {
             return $price / (100.0 + $taxRate) * 100.0;
