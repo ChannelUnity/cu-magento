@@ -239,6 +239,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             $regionModel = Mage::getModel('directory/region')->loadByCode((string) $order->ShippingInfo->State, (string) $order->ShippingInfo->Country);
             $regionId = is_object($regionModel) ? $regionModel->getId() : ((string) $order->ShippingInfo->State);
 
+            
             if (!empty($order->ShippingInfo->Address1)
                     && !empty($order->ShippingInfo->Address2)
                     && ((string) $order->ServiceSku) == "CU_AMZ_DE") {
@@ -328,6 +329,12 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 );
             }
 
+            Mage::getSingleton('core/session')->setShippingPrice(
+                    $this->getDeTaxPrice((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
+
+            // add the shipping address to the quote.
+            $shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
+            
             // add product(s)
             foreach ($order->OrderItems->Item as $orderitem) {
                 $product = Mage::getModel('catalog/product')->loadByAttribute(
@@ -420,11 +427,6 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
                 }
             }
 
-            Mage::getSingleton('core/session')->setShippingPrice(
-                    $this->getDeTaxPrice((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
-
-            // add the shipping address to the quote.
-            $shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
             $quote->getShippingAddress()->setData('should_ignore_validation', true);
             $quote->getBillingAddress()->setData('should_ignore_validation', true);
             /////////////////////////////////////////////
@@ -479,7 +481,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             echo "<Exception><![CDATA[" . $x->getMessage() . " " . $x->getTraceAsString() . "]]></Exception>";
             echo "<NotImported>" . ((string) $order->OrderId) . "</NotImported>";
             Mage::unregister('cu_order_in_progress');
-            if (is_object($newOrder)) {
+            if (isset($newOrder) && is_object($newOrder)) {
                 $newOrder->delete();
             }
             return;
@@ -502,7 +504,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
         }
 
-            try {
+        try {
 
             // This order will have been paid for, otherwise it won't
             // have imported

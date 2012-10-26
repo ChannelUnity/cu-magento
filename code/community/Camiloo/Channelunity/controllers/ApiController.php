@@ -84,12 +84,8 @@ EOD;
 
     public function doApiProcess($xml, $testMode = false)
     {
-
-        // print_r($xml);die;
         // load the XML into the simplexml parser
         $xml = simplexml_load_string($xml, 'SimpleXMLElement', LIBXML_NOCDATA);
-
-
 
         // we now need to verify that this message is genuine. We do this by calling
         // to ChannelUnity HQ with just the contents of the signedmessage element in
