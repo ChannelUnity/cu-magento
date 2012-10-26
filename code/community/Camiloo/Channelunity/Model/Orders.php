@@ -705,7 +705,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
     private function getLastName($name)
     {
         $exp = explode(" ", $name);
-        if (count($exp) > 0) {
+        if (count($exp) > 1) {
 
             return $exp[count($exp) - 1];
         } else {
