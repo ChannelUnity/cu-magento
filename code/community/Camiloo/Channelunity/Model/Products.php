@@ -452,7 +452,29 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
                 } else {
                     $prodDataValue = $product->getData($attr);
                 }
-
+                /*
+                if ($attr == "uni_geschlecht") {
+                    
+                    $prodDataValue2 = "";
+                    
+                    $attributeId = Mage::getResourceModel('eav/entity_attribute')->getIdByCode('catalog_product', $attr);
+                    $attribute = Mage::getModel('catalog/resource_eav_attribute')->load($attributeId);
+                    $attributeOptions = $attribute->getSource()->getAllOptions();
+                    
+                    foreach (explode(",", $prodDataValue) as $prodVal) {
+                        
+                        foreach ($attributeOptions as $aopts) {
+                          //  print_r($aopts); echo " ,";
+                            if ($prodVal == $aopts['value']) {
+                                $prodDataValue2 .= ($aopts['label'].",");
+                            }
+                            
+                        }
+                    }
+                    
+                    $prodDataValue = $prodDataValue2;
+                }
+                */
                 if (is_object($prodDataValue)) {
                     if ('Varien_Object' == get_class($prodDataValue)) {
 
