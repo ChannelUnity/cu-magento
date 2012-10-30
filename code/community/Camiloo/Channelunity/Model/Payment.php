@@ -18,6 +18,13 @@ class Camiloo_Channelunity_Model_Payment extends Mage_Payment_Model_Method_Abstr
     protected $_canUseForMultishipping = false;
     protected $_canUseInternal = false;
     protected $_canCapture = true;
+    
+    
+    public function isAvailable($quote = null){
+    	
+    	return true;
+    	
+    }
 
     /**
      * overwrites the method of Mage_Payment_Model_Method_Cc
