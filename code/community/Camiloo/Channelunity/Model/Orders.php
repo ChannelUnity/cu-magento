@@ -905,8 +905,10 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
 
             //=======================================================
+            $orderIsFba = isset($order->OrderFlags) && (((string) $order->OrderFlags) == 'AMAZON_FBA');
+            
             if (!$bOrderExisted) {
-                $orderIsFba = isset($order->OrderFlags) && (((string) $order->OrderFlags) == 'AMAZON_FBA');
+                
                 $ignoreQty  = Mage::getStoreConfig('channelunityint/generalsettings/ignorefbaqty');
 
                 if (((string) $order->OrderStatus) == "Processing") {
