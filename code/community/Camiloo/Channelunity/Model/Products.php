@@ -509,8 +509,11 @@ class Camiloo_Channelunity_Model_Products extends Camiloo_Channelunity_Model_Abs
     public function generateCuXmlSku($args)
     {
         $row = $args['row'];
-        $productId = $row["sku"];
-        echo "<SKU><![CDATA[ " . $productId . " ]]></SKU>";
+		if(isset($row["sku"]) && !empty($row["sku"]))
+		{
+			$productId = $row["sku"];
+			echo "<SKU><![CDATA[ " . $productId . " ]]></SKU>";
+		}
     }
 
     public function generateCuXmlForProductEcho($args)
