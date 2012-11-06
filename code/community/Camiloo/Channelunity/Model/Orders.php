@@ -330,7 +330,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
             }
 
             Mage::getSingleton('core/session')->setShippingPrice(
-                    $this->getDeTaxPrice((string) $order->ShippingInfo->ShippingPrice) / $reverseRate);
+                    $this->getDeTaxPrice((float) $order->ShippingInfo->ShippingPrice, (float) $order->ShippingInfo->ShippingTax) / $reverseRate );
 
             // add the shipping address to the quote.
             $shippingAddress = $quote->getShippingAddress()->addData($shippingAddressData);
@@ -359,13 +359,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 
                 if (is_object($product)) {
 
-                    $product->setPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress) / $reverseRate);
+                    $product->setPrice($this->getDeTaxPrice((float) $orderitem->Price, (float) $orderitem->Tax, $shippingAddress) / $reverseRate);
 
                     $item = Mage::getModel('sales/quote_item');
                     $item->setQuote($quote)->setProduct($product);
                     $item->setData('qty', (string) $orderitem->Quantity);
-                    $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
-                    $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
+                    $item->setCustomPrice($this->getDeTaxPrice((float) $orderitem->Price, (float) $orderitem->Tax, $shippingAddress));
+                    $item->setOriginalCustomPrice($this->getDeTaxPrice((float) $orderitem->Price, (float) $orderitem->Tax, $shippingAddress));
                     //     $item->setQtyInvoiced((string) $orderitem->Quantity);
 
                     $quote->addItem($item);
@@ -409,13 +409,13 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 
                     if (is_object($product)) {
 
-                        $product->setPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress) / $reverseRate);
+                        $product->setPrice($this->getDeTaxPrice((float) $orderitem->Price, (float) $orderitem->Tax, $shippingAddress) / $reverseRate);
 
                         $item = Mage::getModel('sales/quote_item');
                         $item->setQuote($quote)->setProduct($product);
                         $item->setData('qty', (string) $orderitem->Quantity);
-                        $item->setCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
-                        $item->setOriginalCustomPrice($this->getDeTaxPrice((string) $orderitem->Price, $shippingAddress));
+                        $item->setCustomPrice($this->getDeTaxPrice((float) $orderitem->Price, (float) $orderitem->Tax, $shippingAddress));
+                        $item->setOriginalCustomPrice($this->getDeTaxPrice((float) $orderitem->Price, (float) $orderitem->Tax, $shippingAddress));
                         // $item->setQtyInvoiced((string) $orderitem->Quantity);
                         $quote->addItem($item);
 
@@ -812,9 +812,11 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
         return $rate;
     }
 
-    public function getDeTaxPrice($price, $address = null)
+    public function getDeTaxPrice($price, $tax = 0, $address = null)
     {
         $priceIncTax = Mage::getStoreConfig('channelunityint/generalsettings/priceinctax');
+		
+		$price = $price + $tax;
            
         if ($priceIncTax == 1) {
             return $price;
