@@ -864,7 +864,7 @@ class Camiloo_Channelunity_Model_Orders extends Camiloo_Channelunity_Model_Abstr
 
             try {
                 $transaction = Mage::getModel('sales/order_payment_transaction')
-                        ->loadByTxnId();
+                        ->loadByTxnId($orderId);
 
                 $newOrder = $transaction->getOrder();
                 if (is_object($newOrder)) {
