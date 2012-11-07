@@ -1,0 +1,40 @@
+<?php
+
+/**
+ * ChannelUnity connector for Magento Commerce
+ *
+ * @category   Camiloo
+ * @package    Camiloo_Channelunity
+ * @copyright  Copyright (c) 2011 Camiloo Limited (http://www.camiloo.co.uk)
+ * @license    http://opensource.org/licenses/osl-3.0.php  Open Software License (OSL 3.0)
+ */
+$ii = $this->getMethod()->getInfoInstance();
+
+$order = Mage::getModel('sales/order')->load($ii->getData('parent_id'));
+
+$collection = Mage::getModel('sales/order_payment_transaction')->getCollection()
+        ->setOrderFilter($order);
+
+foreach ($collection as $txn) {
+
+    echo "<b> ChannelUnity Imported Order </b><br/>";
+
+    $infoArray = $txn->getAdditionalInformation();
+    if (isset($infoArray['SubscriptionId'])) {
+        echo "Subscription ID: {$infoArray['SubscriptionId']} <br/>";
+    }
+
+    if (isset($infoArray['RemoteOrderID'])) {
+        echo "Order ID: {$infoArray['RemoteOrderID']} <br/>";
+    }
+
+    if (isset($infoArray['ServiceType'])) {
+        echo "Marketplace: {$infoArray['ServiceType']} <br/>";
+    }
+
+    if (isset($infoArray['AmazonFBA']) && $infoArray['AmazonFBA'] == 'Yes') {
+        echo "Order was fulfilled by Amazon<br/>";
+    }
+
+    break;
+}
